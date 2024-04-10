@@ -53,7 +53,7 @@ async fn main() -> Result<(), reqwest::Error> {
             opts.optopt(
                 "",
                 &route_param.to_case(Case::Kebab),
-                &("the value for ".to_string() + route_param),
+                &format!("the value for {}", route_param),
                 "",
             );
         }
@@ -73,7 +73,7 @@ async fn main() -> Result<(), reqwest::Error> {
             let param_value = match matches.opt_str(kebab_cased_param) {
                 Some(p) => p,
                 None => {
-                    eprintln!("Missing required option: {}", kebab_cased_param);
+                    eprintln!("Missing required option: --{}", kebab_cased_param);
                     process::exit(1);
                 }
             };
@@ -84,7 +84,7 @@ async fn main() -> Result<(), reqwest::Error> {
         if api_call.get("method").unwrap().as_str().unwrap() == "GET" {
             let response: Value = serde_json::from_str(
                 reqwest::get(route_params.iter().fold(url.to_string(), |acc, &x| {
-                    acc.replace(&(":".to_string() + x), &param_values.get(x).unwrap())
+                    acc.replace(&format!(":{}", x), &param_values.get(x).unwrap())
                 }))
                 .await?
                 .text()
