@@ -81,26 +81,30 @@ async fn main() -> Result<(), reqwest::Error> {
             param_values.insert(route_param, param_value);
         }
 
-        if api_call.get("method").unwrap().as_str().unwrap() == "GET" {
-            let response: Value = serde_json::from_str(
-                reqwest::get(route_params.iter().fold(url.to_string(), |acc, &x| {
-                    acc.replace(&format!(":{}", x), &param_values.get(x).unwrap())
-                }))
-                .await?
-                .text()
-                .await?
-                .as_str(),
-            )
-            .unwrap();
-            let mut out = stdout();
-            colored_json::write_colored_json(&response, &mut out).unwrap();
-            out.flush().unwrap();
-            writeln!(out, "").unwrap();
-        } else {
-            println!("Not recognised method");
+        let http_method = api_call.get("method").unwrap().as_str().unwrap();
+        let url_to_call = route_params.iter().fold(url.to_string(), |acc, &x| {
+            acc.replace(&format!(":{}", x), &param_values.get(x).unwrap())
+        });
+        let response: Option<Value> = match http_method {
+            "GET" => {
+                let resp = reqwest::get(url_to_call).await?.text().await?;
+                serde_json::from_str(resp.as_str()).unwrap()
+            }
+            _ => None,
+        };
+
+        match response {
+            Some(value) => {
+                let mut out = stdout();
+                colored_json::write_colored_json(&value, &mut out).unwrap();
+                out.flush().unwrap();
+                writeln!(out, "").unwrap();
+            }
+            None => {
+                println!("HTTP method not supported: {}", http_method);
+                process::exit(1)
+            }
         }
-    } else {
-        println!("command not recongnized");
     }
 
     Ok(())
