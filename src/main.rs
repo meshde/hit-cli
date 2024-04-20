@@ -1,5 +1,6 @@
 use colored_json;
 use convert_case::{Case, Casing};
+use edit::edit;
 use getopts;
 use regex::Regex;
 use reqwest;
@@ -15,6 +16,23 @@ use tokio;
 
 async fn handle_get(url: String) -> Result<String, reqwest::Error> {
     return reqwest::get(url).await?.text().await;
+}
+
+async fn handle_post(url: String) -> Result<String, reqwest::Error> {
+    let client = reqwest::Client::new();
+    let input = edit("").expect("Unable to open system editor");
+    return client.post(url).json(&input).send().await?.text().await;
+}
+
+async fn handle_put(url: String) -> Result<String, reqwest::Error> {
+    let client = reqwest::Client::new();
+    let input = edit("").expect("Unable to open system editor");
+    return client.put(url).json(&input).send().await?.text().await;
+}
+
+async fn handle_delete(url: String) -> Result<String, reqwest::Error> {
+    let client = reqwest::Client::new();
+    return client.delete(url).send().await?.text().await;
 }
 
 #[tokio::main]
@@ -92,6 +110,9 @@ async fn main() -> Result<(), reqwest::Error> {
 
         let response: String = match http_method {
             "GET" => handle_get(url_to_call).await?,
+            "POST" => handle_post(url_to_call).await?,
+            "PUT" => handle_put(url_to_call).await?,
+            "DELETE" => handle_delete(url_to_call).await?,
             _ => {
                 println!("HTTP method not supported: {}", http_method);
                 process::exit(1)
