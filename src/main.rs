@@ -13,6 +13,10 @@ use std::io::Write;
 use std::process;
 use tokio;
 
+async fn handle_get(url: String) -> Result<String, reqwest::Error> {
+    return reqwest::get(url).await?.text().await;
+}
+
 #[tokio::main]
 async fn main() -> Result<(), reqwest::Error> {
     let file = File::open(".hitconfig.json").expect("config file missing");
@@ -85,26 +89,23 @@ async fn main() -> Result<(), reqwest::Error> {
         let url_to_call = route_params.iter().fold(url.to_string(), |acc, &x| {
             acc.replace(&format!(":{}", x), &param_values.get(x).unwrap())
         });
-        let response: Option<Value> = match http_method {
-            "GET" => {
-                let resp = reqwest::get(url_to_call).await?.text().await?;
-                serde_json::from_str(resp.as_str()).unwrap()
-            }
-            _ => None,
-        };
 
-        match response {
-            Some(value) => {
-                let mut out = stdout();
-                colored_json::write_colored_json(&value, &mut out).unwrap();
-                out.flush().unwrap();
-                writeln!(out, "").unwrap();
-            }
-            None => {
+        let response: String = match http_method {
+            "GET" => handle_get(url_to_call).await?,
+            _ => {
                 println!("HTTP method not supported: {}", http_method);
                 process::exit(1)
             }
-        }
+        };
+
+        let mut out = stdout();
+        colored_json::write_colored_json(
+            &serde_json::from_str::<Value>(response.as_str()).unwrap(),
+            &mut out,
+        )
+        .unwrap();
+        out.flush().unwrap();
+        writeln!(out, "").unwrap();
     }
 
     Ok(())
