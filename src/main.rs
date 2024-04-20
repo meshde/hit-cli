@@ -1,5 +1,6 @@
 use colored_json;
 use convert_case::{Case, Casing};
+use edit::edit;
 use getopts;
 use regex::Regex;
 use reqwest;
@@ -12,6 +13,27 @@ use std::io::BufReader;
 use std::io::Write;
 use std::process;
 use tokio;
+
+async fn handle_get(url: String) -> Result<String, reqwest::Error> {
+    return reqwest::get(url).await?.text().await;
+}
+
+async fn handle_post(url: String) -> Result<String, reqwest::Error> {
+    let client = reqwest::Client::new();
+    let input = edit("").expect("Unable to open system editor");
+    return client.post(url).json(&input).send().await?.text().await;
+}
+
+async fn handle_put(url: String) -> Result<String, reqwest::Error> {
+    let client = reqwest::Client::new();
+    let input = edit("").expect("Unable to open system editor");
+    return client.put(url).json(&input).send().await?.text().await;
+}
+
+async fn handle_delete(url: String) -> Result<String, reqwest::Error> {
+    let client = reqwest::Client::new();
+    return client.delete(url).send().await?.text().await;
+}
 
 #[tokio::main]
 async fn main() -> Result<(), reqwest::Error> {
@@ -81,26 +103,30 @@ async fn main() -> Result<(), reqwest::Error> {
             param_values.insert(route_param, param_value);
         }
 
-        if api_call.get("method").unwrap().as_str().unwrap() == "GET" {
-            let response: Value = serde_json::from_str(
-                reqwest::get(route_params.iter().fold(url.to_string(), |acc, &x| {
-                    acc.replace(&format!(":{}", x), &param_values.get(x).unwrap())
-                }))
-                .await?
-                .text()
-                .await?
-                .as_str(),
-            )
-            .unwrap();
-            let mut out = stdout();
-            colored_json::write_colored_json(&response, &mut out).unwrap();
-            out.flush().unwrap();
-            writeln!(out, "").unwrap();
-        } else {
-            println!("Not recognised method");
-        }
-    } else {
-        println!("command not recongnized");
+        let http_method = api_call.get("method").unwrap().as_str().unwrap();
+        let url_to_call = route_params.iter().fold(url.to_string(), |acc, &x| {
+            acc.replace(&format!(":{}", x), &param_values.get(x).unwrap())
+        });
+
+        let response: String = match http_method {
+            "GET" => handle_get(url_to_call).await?,
+            "POST" => handle_post(url_to_call).await?,
+            "PUT" => handle_put(url_to_call).await?,
+            "DELETE" => handle_delete(url_to_call).await?,
+            _ => {
+                println!("HTTP method not supported: {}", http_method);
+                process::exit(1)
+            }
+        };
+
+        let mut out = stdout();
+        colored_json::write_colored_json(
+            &serde_json::from_str::<Value>(response.as_str()).unwrap(),
+            &mut out,
+        )
+        .unwrap();
+        out.flush().unwrap();
+        writeln!(out, "").unwrap();
     }
 
     Ok(())
