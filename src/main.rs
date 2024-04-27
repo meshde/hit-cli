@@ -1,5 +1,7 @@
 use colored_json;
 use convert_case::{Case, Casing};
+use crossterm::event::{read, Event, KeyCode};
+use crossterm::terminal;
 use edit::edit;
 use getopts;
 use regex::Regex;
@@ -121,18 +123,32 @@ async fn main() -> Result<(), reqwest::Error> {
 
         let response_json_result = serde_json::from_str::<Value>(response.as_str());
 
-        let mut out = stdout();
-
         match response_json_result {
             Ok(response_json) => {
+                let mut out = stdout();
                 colored_json::write_colored_json(&response_json, &mut out).unwrap();
+                out.flush().unwrap();
+                writeln!(out, "").unwrap();
+                println!("Press c to enter copy mode or any other key  to exit");
+                terminal::enable_raw_mode().unwrap();
+
+                loop {
+                    if let Ok(event) = read() {
+                        if let Event::Key(key) = event {
+                            terminal::disable_raw_mode().unwrap();
+                            if key.code == KeyCode::Char('c') {
+                                write!(out, "copy mode").unwrap();
+                            }
+                            break;
+                        }
+                    }
+                }
+                println!("");
             }
             Err(_error) => {
-                writeln!(out, "{}", response).unwrap();
+                println!("{}", response);
             }
         }
-        out.flush().unwrap();
-        writeln!(out, "").unwrap();
     }
 
     Ok(())
