@@ -119,12 +119,18 @@ async fn main() -> Result<(), reqwest::Error> {
             }
         };
 
+        let response_json_result = serde_json::from_str::<Value>(response.as_str());
+
         let mut out = stdout();
-        colored_json::write_colored_json(
-            &serde_json::from_str::<Value>(response.as_str()).unwrap(),
-            &mut out,
-        )
-        .unwrap();
+
+        match response_json_result {
+            Ok(response_json) => {
+                colored_json::write_colored_json(&response_json, &mut out).unwrap();
+            }
+            Err(_error) => {
+                writeln!(out, "{}", response).unwrap();
+            }
+        }
         out.flush().unwrap();
         writeln!(out, "").unwrap();
     }
