@@ -3,7 +3,9 @@ use convert_case::{Case, Casing};
 use crossterm::event::{read, Event, KeyCode};
 use crossterm::terminal;
 use edit::edit;
+use flatten_json_object::Flattener;
 use getopts;
+use inquire::{CustomUserError, Text};
 use regex::Regex;
 use reqwest;
 use serde_json::Value;
@@ -138,6 +140,32 @@ async fn main() -> Result<(), reqwest::Error> {
                             terminal::disable_raw_mode().unwrap();
                             if key.code == KeyCode::Char('c') {
                                 write!(out, "copy mode").unwrap();
+                                let flattened_json =
+                                    Flattener::new().flatten(&response_json).unwrap();
+
+                                let json_paths: Vec<&str> = flattened_json
+                                    .as_object()
+                                    .unwrap()
+                                    .keys()
+                                    .map(|k| k.as_str())
+                                    .collect();
+
+                                let suggester =
+                                    |val: &str| -> Result<Vec<String>, CustomUserError> {
+                                        let val_lower = val.to_lowercase();
+
+                                        Ok(json_paths
+                                            .iter()
+                                            .filter(|s| s.to_lowercase().contains(&val_lower))
+                                            .map(|s| String::from(*s))
+                                            .collect())
+                                    };
+
+                                let user_json_path = Text::new("Enter the JSON path: ")
+                                    .with_autocomplete(&suggester)
+                                    .prompt()
+                                    .unwrap();
+                                println!("You enterered {}", user_json_path);
                             }
                             break;
                         }
