@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 colored_json = "5.0.0"
+commands = "0.0.5"
 convert_case = "0.6.0"
 crossterm = "0.27.0"
 edit = "0.1.5"

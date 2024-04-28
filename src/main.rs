@@ -1,11 +1,12 @@
 use colored_json;
+use commands::util::longest_common_prefix;
 use convert_case::{Case, Casing};
 use crossterm::event::{read, Event, KeyCode};
 use crossterm::terminal;
 use edit::edit;
 use flatten_json_object::Flattener;
 use getopts;
-use inquire::{CustomUserError, Text};
+use inquire::{autocompletion::Replacement, Autocomplete, CustomUserError, Text};
 use regex::Regex;
 use reqwest;
 use serde_json::Value;
@@ -17,6 +18,43 @@ use std::io::BufReader;
 use std::io::Write;
 use std::process;
 use tokio;
+
+#[derive(Clone)]
+struct CustomAutocomplete {
+    suggestions: Vec<String>,
+}
+
+impl Autocomplete for CustomAutocomplete {
+    fn get_suggestions(&mut self, input: &str) -> Result<Vec<String>, CustomUserError> {
+        let input_lower = input.to_lowercase();
+        Ok(self
+            .suggestions
+            .iter()
+            .filter(|s| s.to_lowercase().contains(&input_lower))
+            // NOTE(meshde): the following line converts Vec<&String> to Vec<String>
+            .map(|s| s.clone())
+            .collect())
+    }
+    fn get_completion(
+        &mut self,
+        input: &str,
+        highlighted_suggestion: Option<String>,
+    ) -> Result<Replacement, CustomUserError> {
+        Ok(match highlighted_suggestion {
+            Some(suggestion) => Replacement::Some(suggestion),
+            None => Replacement::Some(
+                longest_common_prefix(
+                    self.get_suggestions(input)
+                        .unwrap()
+                        .iter()
+                        .map(|x| x.as_str())
+                        .collect(),
+                )
+                .to_string(),
+            ),
+        })
+    }
+}
 
 async fn handle_get(url: String) -> Result<String, reqwest::Error> {
     return reqwest::get(url).await?.text().await;
@@ -143,26 +181,17 @@ async fn main() -> Result<(), reqwest::Error> {
                                 let flattened_json =
                                     Flattener::new().flatten(&response_json).unwrap();
 
-                                let json_paths: Vec<&str> = flattened_json
+                                let json_paths: Vec<String> = flattened_json
                                     .as_object()
                                     .unwrap()
                                     .keys()
-                                    .map(|k| k.as_str())
+                                    .map(|k| k.to_string())
                                     .collect();
 
-                                let suggester =
-                                    |val: &str| -> Result<Vec<String>, CustomUserError> {
-                                        let val_lower = val.to_lowercase();
-
-                                        Ok(json_paths
-                                            .iter()
-                                            .filter(|s| s.to_lowercase().contains(&val_lower))
-                                            .map(|s| String::from(*s))
-                                            .collect())
-                                    };
-
                                 let user_json_path = Text::new("Enter the JSON path: ")
-                                    .with_autocomplete(&suggester)
+                                    .with_autocomplete(CustomAutocomplete {
+                                        suggestions: json_paths,
+                                    })
                                     .prompt()
                                     .unwrap();
                                 println!("You enterered {}", user_json_path);
