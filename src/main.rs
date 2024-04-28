@@ -1,3 +1,4 @@
+use arboard::Clipboard;
 use colored_json;
 use commands::util::longest_common_prefix;
 use convert_case::{Case, Casing};
@@ -54,6 +55,10 @@ impl Autocomplete for CustomAutocomplete {
             ),
         })
     }
+}
+
+fn get_json_value_from_path<'a, 'b>(json: &'a Value, path: &'b str) -> Option<&'a Value> {
+    json.pointer(format!("/{}", path.replace(".", "/")).as_str())
 }
 
 async fn handle_get(url: String) -> Result<String, reqwest::Error> {
@@ -177,7 +182,6 @@ async fn main() -> Result<(), reqwest::Error> {
                         if let Event::Key(key) = event {
                             terminal::disable_raw_mode().unwrap();
                             if key.code == KeyCode::Char('c') {
-                                write!(out, "copy mode").unwrap();
                                 let flattened_json =
                                     Flattener::new().flatten(&response_json).unwrap();
 
@@ -194,7 +198,14 @@ async fn main() -> Result<(), reqwest::Error> {
                                     })
                                     .prompt()
                                     .unwrap();
-                                println!("You enterered {}", user_json_path);
+                                Clipboard::new()
+                                    .unwrap()
+                                    .set_text(
+                                        get_json_value_from_path(&response_json, &user_json_path)
+                                            .unwrap()
+                                            .to_string(),
+                                    )
+                                    .unwrap();
                             }
                             break;
                         }
