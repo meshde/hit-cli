@@ -1,7 +1,13 @@
+use arboard::Clipboard;
 use colored_json;
+use commands::util::longest_common_prefix;
 use convert_case::{Case, Casing};
+use crossterm::event::{read, Event, KeyCode};
+use crossterm::terminal;
 use edit::edit;
+use flatten_json_object::Flattener;
 use getopts;
+use inquire::{autocompletion::Replacement, Autocomplete, CustomUserError, Text};
 use regex::Regex;
 use reqwest;
 use serde_json::Value;
@@ -13,6 +19,47 @@ use std::io::BufReader;
 use std::io::Write;
 use std::process;
 use tokio;
+
+#[derive(Clone)]
+struct CustomAutocomplete {
+    suggestions: Vec<String>,
+}
+
+impl Autocomplete for CustomAutocomplete {
+    fn get_suggestions(&mut self, input: &str) -> Result<Vec<String>, CustomUserError> {
+        let input_lower = input.to_lowercase();
+        Ok(self
+            .suggestions
+            .iter()
+            .filter(|s| s.to_lowercase().contains(&input_lower))
+            // NOTE(meshde): the following line converts Vec<&String> to Vec<String>
+            .map(|s| s.clone())
+            .collect())
+    }
+    fn get_completion(
+        &mut self,
+        input: &str,
+        highlighted_suggestion: Option<String>,
+    ) -> Result<Replacement, CustomUserError> {
+        Ok(match highlighted_suggestion {
+            Some(suggestion) => Replacement::Some(suggestion),
+            None => Replacement::Some(
+                longest_common_prefix(
+                    self.get_suggestions(input)
+                        .unwrap()
+                        .iter()
+                        .map(|x| x.as_str())
+                        .collect(),
+                )
+                .to_string(),
+            ),
+        })
+    }
+}
+
+fn get_json_value_from_path<'a, 'b>(json: &'a Value, path: &'b str) -> Option<&'a Value> {
+    json.pointer(format!("/{}", path.replace(".", "/")).as_str())
+}
 
 async fn handle_get(url: String) -> Result<String, reqwest::Error> {
     return reqwest::get(url).await?.text().await;
@@ -121,18 +168,55 @@ async fn main() -> Result<(), reqwest::Error> {
 
         let response_json_result = serde_json::from_str::<Value>(response.as_str());
 
-        let mut out = stdout();
-
         match response_json_result {
             Ok(response_json) => {
+                let mut out = stdout();
                 colored_json::write_colored_json(&response_json, &mut out).unwrap();
+                out.flush().unwrap();
+                writeln!(out, "").unwrap();
+                println!("Press c to enter copy mode or any other key  to exit");
+                terminal::enable_raw_mode().unwrap();
+
+                loop {
+                    if let Ok(event) = read() {
+                        if let Event::Key(key) = event {
+                            terminal::disable_raw_mode().unwrap();
+                            if key.code == KeyCode::Char('c') {
+                                let flattened_json =
+                                    Flattener::new().flatten(&response_json).unwrap();
+
+                                let json_paths: Vec<String> = flattened_json
+                                    .as_object()
+                                    .unwrap()
+                                    .keys()
+                                    .map(|k| k.to_string())
+                                    .collect();
+
+                                let user_json_path = Text::new("Enter the JSON path: ")
+                                    .with_autocomplete(CustomAutocomplete {
+                                        suggestions: json_paths,
+                                    })
+                                    .prompt()
+                                    .unwrap();
+                                Clipboard::new()
+                                    .unwrap()
+                                    .set_text(
+                                        get_json_value_from_path(&response_json, &user_json_path)
+                                            .unwrap()
+                                            .to_string(),
+                                    )
+                                    .unwrap();
+                            }
+                            break;
+                        }
+                    }
+                }
+                println!("");
             }
             Err(_error) => {
-                writeln!(out, "{}", response).unwrap();
+                println!("{}", response);
             }
         }
-        out.flush().unwrap();
-        writeln!(out, "").unwrap();
     }
 
     Ok(())
