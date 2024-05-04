@@ -8,11 +8,13 @@ use crossterm::event::{read, Event, KeyCode};
 use crossterm::terminal;
 use flatten_json_object::Flattener;
 use getopts;
+use handlebars::Handlebars;
 use inquire::Text;
 use regex::Regex;
 use reqwest;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
+use std::env;
 use std::fs::File;
 use std::io::stdout;
 use std::io::BufReader;
@@ -30,6 +32,7 @@ pub async fn init(args: Vec<String>) -> Result<(), reqwest::Error> {
     let config: Config = serde_json::from_reader(reader).expect("Error while reading JSON");
     let route_param_regex = Regex::new(r"\/:(\w+)").unwrap();
 
+    let hb_handle = Handlebars::new();
     let commands: Vec<&str> = config.commands.keys().map(|key| key.as_str()).collect();
 
     let run_command = args[0].as_str();
@@ -80,9 +83,14 @@ pub async fn init(args: Vec<String>) -> Result<(), reqwest::Error> {
             param_values.insert(route_param, param_value);
         }
 
-        let url_to_call = route_params.iter().fold(url.to_string(), |acc, &x| {
-            acc.replace(&format!(":{}", x), &param_values.get(x).unwrap())
-        });
+        let env_data = config
+            .envs
+            .get(&env::var("HIT_ENV").expect("env not set"))
+            .unwrap();
+        let url_to_call = route_params.iter().fold(
+            hb_handle.render_template(url, env_data).unwrap(),
+            |acc, &x| acc.replace(&format!(":{}", x), &param_values.get(x).unwrap()),
+        );
 
         let response = handle_request(url_to_call, &api_call.method).await?;
         let response_json_result = serde_json::from_str::<Value>(response.as_str());

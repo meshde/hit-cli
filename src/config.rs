@@ -11,4 +11,5 @@ pub struct Command {
 #[derive(Deserialize)]
 pub struct Config {
     pub commands: HashMap<String, Command>,
+    pub envs: HashMap<String, HashMap<String, String>>,
 }
