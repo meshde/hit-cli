@@ -6,7 +6,6 @@ use std::process::ExitCode;
 #[derive(Debug, Parser)]
 #[command(name = "hit")]
 #[command(about = "CLI tool for API testing")]
-#[command(allow_external_subcommands = true)]
 pub struct Cli {
     #[command(subcommand)]
     command: Commands,
