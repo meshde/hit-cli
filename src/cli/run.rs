@@ -12,9 +12,9 @@ use getopts;
 use handlebars::Handlebars;
 use inquire::Text;
 use regex::Regex;
-use reqwest;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
+use std::error::Error;
 use std::fs::File;
 use std::io::stdout;
 use std::io::BufReader;
@@ -25,7 +25,7 @@ fn get_json_value_from_path<'a, 'b>(json: &'a Value, path: &'b str) -> Option<&'
     json.pointer(format!("/{}", path.replace(".", "/")).as_str())
 }
 
-pub async fn init(args: Vec<String>) -> Result<(), reqwest::Error> {
+pub async fn init(args: Vec<String>) -> Result<(), Box<dyn Error>> {
     let file = File::open(".hitconfig.json").expect("config file missing");
     let reader = BufReader::new(file);
 
@@ -86,7 +86,7 @@ pub async fn init(args: Vec<String>) -> Result<(), reqwest::Error> {
 
         let url_with_env_vars = if env_var_regex.is_match(url) {
             let current_env = get_env().expect("env not set");
-            let env_data = config.envs.get(&current_env).unwrap();
+            let env_data = config.envs.get(&current_env).expect("env not recognized");
             hb_handle.render_template(url, env_data).unwrap()
         } else {
             url.to_string()

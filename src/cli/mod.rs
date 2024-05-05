@@ -1,3 +1,4 @@
+mod env;
 mod run;
 
 use clap::{Parser, Subcommand};
@@ -8,11 +9,13 @@ use std::process::ExitCode;
 #[command(about = "CLI tool for API testing")]
 pub struct Cli {
     #[command(subcommand)]
-    command: Commands,
+    command: Command,
 }
 
 #[derive(Debug, Subcommand)]
-enum Commands {
+enum Command {
+    #[command(subcommand)]
+    Env(env::EnvCommand),
     #[command(external_subcommand)]
     Run(Vec<String>),
 }
@@ -21,7 +24,8 @@ pub async fn init() -> ExitCode {
     let args = Cli::parse();
 
     let output = match args.command {
-        Commands::Run(args) => run::init(args).await,
+        Command::Env(args) => env::init(args),
+        Command::Run(args) => run::init(args).await,
     };
 
     if let Err(_e) = output {
