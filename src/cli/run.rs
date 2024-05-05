@@ -3,6 +3,7 @@ use crate::env::get_env;
 use crate::http::handle_request;
 use crate::input::CustomAutocomplete;
 use arboard::Clipboard;
+use clap::Subcommand;
 use colored_json;
 use convert_case::{Case, Casing};
 use crossterm::event::{read, Event, KeyCode};
@@ -19,11 +20,22 @@ use std::io::stdout;
 use std::io::Write;
 use std::process;
 
+#[derive(Debug, Subcommand)]
+pub enum RunCommand {
+    #[command(external_subcommand)]
+    Run(Vec<String>),
+}
 fn get_json_value_from_path<'a, 'b>(json: &'a Value, path: &'b str) -> Option<&'a Value> {
     json.pointer(format!("/{}", path.replace(".", "/")).as_str())
 }
 
-pub async fn init(args: Vec<String>) -> Result<(), Box<dyn Error>> {
+pub async fn init(command: RunCommand) -> Result<(), Box<dyn Error>> {
+    match command {
+        RunCommand::Run(args) => run(args).await,
+    }
+}
+
+pub async fn run(args: Vec<String>) -> Result<(), Box<dyn Error>> {
     let config = Config::new();
     let route_param_regex = Regex::new(r"\/:(\w+)").unwrap();
     let env_var_regex = Regex::new(r"\{\{\w+}}").unwrap();

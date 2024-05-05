@@ -16,8 +16,8 @@ pub struct Cli {
 enum Command {
     #[command(subcommand)]
     Env(env::EnvCommand),
-    #[command(external_subcommand)]
-    Run(Vec<String>),
+    #[command(subcommand)]
+    Run(run::RunCommand),
 }
 
 pub async fn init() -> ExitCode {
