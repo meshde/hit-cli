@@ -1,4 +1,5 @@
 use crate::app_config::{get_app_config, AppConfig};
+use crate::config::Config;
 use std::env;
 
 pub fn get_env_key() -> String {
@@ -24,4 +25,8 @@ pub fn set_env(env: String) -> () {
 
     app_config.envs.insert(get_env_key(), env);
     app_config.save();
+}
+
+pub fn list_envs() -> Vec<String> {
+    Config::new().envs.keys().map(|k| k.clone()).collect()
 }

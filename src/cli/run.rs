@@ -15,9 +15,7 @@ use regex::Regex;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 use std::error::Error;
-use std::fs::File;
 use std::io::stdout;
-use std::io::BufReader;
 use std::io::Write;
 use std::process;
 
@@ -26,10 +24,7 @@ fn get_json_value_from_path<'a, 'b>(json: &'a Value, path: &'b str) -> Option<&'
 }
 
 pub async fn init(args: Vec<String>) -> Result<(), Box<dyn Error>> {
-    let file = File::open(".hitconfig.json").expect("config file missing");
-    let reader = BufReader::new(file);
-
-    let config: Config = serde_json::from_reader(reader).expect("Error while reading JSON");
+    let config = Config::new();
     let route_param_regex = Regex::new(r"\/:(\w+)").unwrap();
     let env_var_regex = Regex::new(r"\{\{\w+}}").unwrap();
 
