@@ -1,4 +1,6 @@
-use crate::http::{handle_delete, handle_get, handle_post, handle_put};
+use crate::config::Config;
+use crate::env::get_env;
+use crate::http::handle_request;
 use crate::input::CustomAutocomplete;
 use arboard::Clipboard;
 use colored_json;
@@ -7,51 +9,34 @@ use crossterm::event::{read, Event, KeyCode};
 use crossterm::terminal;
 use flatten_json_object::Flattener;
 use getopts;
+use handlebars::Handlebars;
 use inquire::Text;
 use regex::Regex;
-use reqwest;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
-use std::fs::File;
+use std::error::Error;
 use std::io::stdout;
-use std::io::BufReader;
 use std::io::Write;
 use std::process;
-
-// #[derive(Args, Debug)]
-// pub struct RunArguments {
-//     #[command(flatten)]
-//     args: Vec<String>,
-// }
 
 fn get_json_value_from_path<'a, 'b>(json: &'a Value, path: &'b str) -> Option<&'a Value> {
     json.pointer(format!("/{}", path.replace(".", "/")).as_str())
 }
 
-pub async fn init(args: Vec<String>) -> Result<(), reqwest::Error> {
-    let file = File::open(".hitconfig.json").expect("config file missing");
-    let reader = BufReader::new(file);
-
-    let config: Value = serde_json::from_reader(reader).expect("Error while reading JSON");
+pub async fn init(args: Vec<String>) -> Result<(), Box<dyn Error>> {
+    let config = Config::new();
     let route_param_regex = Regex::new(r"\/:(\w+)").unwrap();
+    let env_var_regex = Regex::new(r"\{\{\w+}}").unwrap();
 
-    let commands: Vec<&str> = config
-        .as_object()
-        .unwrap()
-        .keys()
-        .map(|key| key.as_str())
-        .collect();
+    let hb_handle = Handlebars::new();
+    let commands: Vec<&str> = config.commands.keys().map(|key| key.as_str()).collect();
 
     let run_command = args[0].as_str();
     let run_command_flags = &args[1..];
     if commands.contains(&run_command) {
-        let api_call = config.get(run_command).unwrap();
+        let api_call = config.commands.get(run_command).unwrap();
 
-        let url = api_call
-            .get("url")
-            .expect("command missing url")
-            .as_str()
-            .expect("url is not string");
+        let url = api_call.url.as_str();
 
         let route_params: Vec<&str> = route_param_regex
             .captures_iter(url)
@@ -94,22 +79,19 @@ pub async fn init(args: Vec<String>) -> Result<(), reqwest::Error> {
             param_values.insert(route_param, param_value);
         }
 
-        let http_method = api_call.get("method").unwrap().as_str().unwrap();
-        let url_to_call = route_params.iter().fold(url.to_string(), |acc, &x| {
+        let url_with_env_vars = if env_var_regex.is_match(url) {
+            let current_env = get_env().expect("env not set");
+            let env_data = config.envs.get(&current_env).expect("env not recognized");
+            hb_handle.render_template(url, env_data).unwrap()
+        } else {
+            url.to_string()
+        };
+
+        let url_to_call = route_params.iter().fold(url_with_env_vars, |acc, &x| {
             acc.replace(&format!(":{}", x), &param_values.get(x).unwrap())
         });
 
-        let response: String = match http_method {
-            "GET" => handle_get(url_to_call).await?,
-            "POST" => handle_post(url_to_call).await?,
-            "PUT" => handle_put(url_to_call).await?,
-            "DELETE" => handle_delete(url_to_call).await?,
-            _ => {
-                println!("HTTP method not supported: {}", http_method);
-                process::exit(1)
-            }
-        };
-
+        let response = handle_request(url_to_call, &api_call.method).await?;
         let response_json_result = serde_json::from_str::<Value>(response.as_str());
 
         match response_json_result {
