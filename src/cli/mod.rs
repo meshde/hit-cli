@@ -1,32 +1,43 @@
 mod env;
 mod run;
 
-use clap::{Parser, Subcommand};
+use clap::{command, Arg, Command, FromArgMatches as _, Parser, Subcommand};
 use std::process::ExitCode;
 
 #[derive(Debug, Parser)]
-#[command(name = "hit")]
-#[command(about = "CLI tool for API testing")]
-pub struct Cli {
-    #[command(subcommand)]
-    command: Command,
-}
-
-#[derive(Debug, Subcommand)]
-enum Command {
+enum StaticCommand {
     #[command(subcommand)]
     Env(env::EnvCommand),
-    #[command(subcommand)]
-    Run(run::RunCommand),
 }
 
 pub async fn init() -> ExitCode {
-    let args = Cli::parse();
+    let cli =
+        Command::new("hit").subcommand(Command::new("run").arg(Arg::new("command").num_args(1..)));
 
-    let output = match args.command {
-        Command::Env(args) => env::init(args),
-        Command::Run(args) => run::init(args).await,
-    };
+    let cli = StaticCommand::augment_subcommands(cli);
+    let output;
+
+    let matches = cli.get_matches();
+
+    if matches.subcommand_name() == Some("run") {
+        output = run::run(
+            matches
+                .subcommand_matches("run")
+                .unwrap()
+                .get_raw("command")
+                .unwrap()
+                .into_iter()
+                .map(|x| x.to_string_lossy().to_string())
+                .collect(),
+        )
+        .await;
+    } else {
+        let static_command_matches = StaticCommand::from_arg_matches(&matches).unwrap();
+
+        output = match static_command_matches {
+            StaticCommand::Env(args) => env::init(args),
+        };
+    }
 
     if let Err(_e) = output {
         ExitCode::FAILURE
