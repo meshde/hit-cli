@@ -13,9 +13,7 @@ enum StaticCommand {
     Env(env::EnvCommand),
 }
 
-fn get_run_command() -> Command {
-    let config = Config::new();
-
+fn get_run_command(config: &Config) -> Command {
     let mut command = Command::new("run").arg_required_else_help(true);
 
     for command_name in config.commands() {
@@ -40,9 +38,10 @@ fn get_run_command() -> Command {
 }
 
 pub async fn init() -> ExitCode {
+    let config = Config::new();
     let cli = Command::new("hit")
         .arg_required_else_help(true)
-        .subcommand(get_run_command());
+        .subcommand(get_run_command(&config));
 
     let cli = StaticCommand::augment_subcommands(cli);
 
@@ -68,7 +67,11 @@ pub async fn init() -> ExitCode {
                         .to_string(),
                 );
             }
-            run::run(run_subcommand_name.to_string(), args_map).await
+            run::run(
+                &config.get_command(&run_subcommand_name.to_string()),
+                args_map,
+            )
+            .await
         }
         _ => {
             let static_command_matches = StaticCommand::from_arg_matches(&matches).unwrap();
