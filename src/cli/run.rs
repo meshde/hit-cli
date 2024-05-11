@@ -3,93 +3,38 @@ use crate::env::get_env;
 use crate::http::handle_request;
 use crate::input::CustomAutocomplete;
 use arboard::Clipboard;
-use clap::Subcommand;
 use colored_json;
-use convert_case::{Case, Casing};
 use crossterm::event::{read, Event, KeyCode};
 use crossterm::terminal;
 use flatten_json_object::Flattener;
-use getopts;
 use handlebars::Handlebars;
 use inquire::Text;
 use regex::Regex;
 use serde_json::Value;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::error::Error;
 use std::io::stdout;
 use std::io::Write;
-use std::process;
 
-#[derive(Debug, Subcommand)]
-pub enum RunCommand {
-    #[command(external_subcommand)]
-    Run(Vec<String>),
-}
 fn get_json_value_from_path<'a, 'b>(json: &'a Value, path: &'b str) -> Option<&'a Value> {
     json.pointer(format!("/{}", path.replace(".", "/")).as_str())
 }
 
-pub async fn init(command: RunCommand) -> Result<(), Box<dyn Error>> {
-    match command {
-        RunCommand::Run(args) => run(args).await,
-    }
-}
-
-pub async fn run(args: Vec<String>) -> Result<(), Box<dyn Error>> {
+pub async fn run(
+    run_command: String,
+    param_values: HashMap<String, String>,
+) -> Result<(), Box<dyn Error>> {
     let config = Config::new();
-    let route_param_regex = Regex::new(r"\/:(\w+)").unwrap();
     let env_var_regex = Regex::new(r"\{\{\w+}}").unwrap();
 
     let hb_handle = Handlebars::new();
-    let commands: Vec<&str> = config.commands.keys().map(|key| key.as_str()).collect();
 
-    let run_command = args[0].as_str();
-    let run_command_flags = &args[1..];
-    if commands.contains(&run_command) {
-        let api_call = config.commands.get(run_command).unwrap();
+    if config.commands().contains(&run_command) {
+        let api_call = config.get_command(&run_command);
 
         let url = api_call.url.as_str();
 
-        let route_params: Vec<&str> = route_param_regex
-            .captures_iter(url)
-            .filter_map(|caps| caps.get(1))
-            .map(|word| word.as_str())
-            .collect::<HashSet<&str>>()
-            .into_iter()
-            .collect();
-
-        let mut opts = getopts::Options::new();
-        for route_param in &route_params {
-            opts.optopt(
-                "",
-                &route_param.to_case(Case::Kebab),
-                &format!("the value for {}", route_param),
-                "",
-            );
-        }
-
-        let matches = match opts.parse(run_command_flags) {
-            Ok(m) => m,
-            Err(e) => {
-                eprintln!("{}", e.to_string());
-                process::exit(1);
-            }
-        };
-
-        let mut param_values: HashMap<&str, String> = HashMap::new();
-
-        for route_param in &route_params {
-            let kebab_cased_param = &route_param.to_case(Case::Kebab);
-            let param_value = match matches.opt_str(kebab_cased_param) {
-                Some(p) => p,
-                None => {
-                    eprintln!("Missing required option: --{}", kebab_cased_param);
-                    process::exit(1);
-                }
-            };
-
-            param_values.insert(route_param, param_value);
-        }
+        let route_params = api_call.route_params();
 
         let url_with_env_vars = if env_var_regex.is_match(url) {
             let current_env = get_env().expect("env not set");
@@ -99,7 +44,7 @@ pub async fn run(args: Vec<String>) -> Result<(), Box<dyn Error>> {
             url.to_string()
         };
 
-        let url_to_call = route_params.iter().fold(url_with_env_vars, |acc, &x| {
+        let url_to_call = route_params.iter().fold(url_with_env_vars, |acc, x| {
             acc.replace(&format!(":{}", x), &param_values.get(x).unwrap())
         });
 
