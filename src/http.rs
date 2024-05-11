@@ -3,7 +3,7 @@ use reqwest;
 use serde::Deserialize;
 use strum::Display;
 
-#[derive(Display, Deserialize)]
+#[derive(Display, Deserialize, Clone)]
 pub enum HttpMethod {
     GET,
     POST,

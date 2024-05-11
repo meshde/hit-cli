@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 arboard = "3.3.2"
-clap = {version="4.5.4", features=["derive"]}
+clap = {version="4.5.4", features=["derive", "string"]}
 colored = "2.1.0"
 colored_json = "5.0.0"
 commands = "0.0.5"
