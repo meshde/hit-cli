@@ -1,5 +1,6 @@
 use crate::config::{Command, Config};
 use crate::env::get_env;
+use crate::ephenv::get_ephenvs;
 use crate::http::handle_request;
 use crate::input::CustomAutocomplete;
 use arboard::Clipboard;
@@ -36,7 +37,14 @@ pub async fn run(
     let url_with_env_vars = if env_var_regex.is_match(url) {
         let current_env = get_env().expect("env not set");
         let env_data = config.envs.get(&current_env).expect("env not recognized");
-        hb_handle.render_template(url, env_data).unwrap()
+        let ephenv_data = get_ephenvs();
+        let merged_data = env_data
+            .clone()
+            .into_iter()
+            .chain(ephenv_data.clone())
+            .collect::<HashMap<String, String>>();
+
+        hb_handle.render_template(url, &merged_data).unwrap()
     } else {
         url.to_string()
     };

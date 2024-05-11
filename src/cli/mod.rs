@@ -1,4 +1,5 @@
 mod env;
+mod ephenv;
 mod run;
 
 use crate::config::Config;
@@ -11,6 +12,8 @@ use std::process::ExitCode;
 enum StaticCommand {
     #[command(subcommand)]
     Env(env::EnvCommand),
+    #[command(subcommand)]
+    Ephenv(ephenv::EphenvCommand),
 }
 
 fn get_run_command(config: &Config) -> Command {
@@ -78,6 +81,7 @@ pub async fn init() -> ExitCode {
 
             match static_command_matches {
                 StaticCommand::Env(args) => env::init(args),
+                StaticCommand::Ephenv(args) => ephenv::init(args),
             }
         }
     };

@@ -8,13 +8,17 @@ use std::path::PathBuf;
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct AppConfig {
+    #[serde(default)]
     pub envs: HashMap<String, String>,
+    #[serde(default)]
+    pub ephenvs: HashMap<String, HashMap<String, String>>,
 }
 
 impl AppConfig {
     pub fn new() -> AppConfig {
         AppConfig {
             envs: HashMap::new(),
+            ephenvs: HashMap::new(),
         }
     }
 
