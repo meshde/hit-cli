@@ -34,16 +34,16 @@ pub async fn run(
 
     let route_params = api_call.route_params();
 
-    let url_with_env_vars = if env_var_regex.is_match(url) {
-        let current_env = get_env().expect("env not set");
-        let env_data = config.envs.get(&current_env).expect("env not recognized");
-        let ephenv_data = get_ephenvs();
-        let merged_data = env_data
-            .clone()
-            .into_iter()
-            .chain(ephenv_data.clone())
-            .collect::<HashMap<String, String>>();
+    let current_env = get_env().expect("env not set");
+    let env_data = config.envs.get(&current_env).expect("env not recognized");
+    let ephenv_data = get_ephenvs();
+    let merged_data = env_data
+        .clone()
+        .into_iter()
+        .chain(ephenv_data.clone())
+        .collect::<HashMap<String, String>>();
 
+    let url_with_env_vars = if env_var_regex.is_match(url) {
         hb_handle.render_template(url, &merged_data).unwrap()
     } else {
         url.to_string()
@@ -53,7 +53,18 @@ pub async fn run(
         acc.replace(&format!(":{}", x), &param_values.get(x).unwrap())
     });
 
-    let response = handle_request(url_to_call, &api_call.method).await?;
+    let response = handle_request(
+        url_to_call,
+        &api_call.method,
+        &api_call
+            .headers
+            .clone()
+            .into_iter()
+            .map(|(k, v)| (k, hb_handle.render_template(&v, &merged_data).unwrap()))
+            .collect::<HashMap<String, String>>(),
+    )
+    .await?;
+
     let response_json_result = serde_json::from_str::<Value>(response.as_str());
 
     match response_json_result {
