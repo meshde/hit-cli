@@ -2,6 +2,7 @@ use crate::config::{Command, Config};
 use crate::env::get_env;
 use crate::ephenv::get_ephenvs;
 use crate::http::handle_request;
+use edit::edit;
 // use crate::input::CustomAutocomplete;
 // use arboard::Clipboard;
 use colored_json;
@@ -21,6 +22,12 @@ use std::io::Write;
 //     json.pointer(format!("/{}", path.replace(".", "/")).as_str())
 // }
 
+fn replace_params(input: String, params: &HashMap<String, String>) -> String {
+    params.keys().fold(input, |acc, x| {
+        acc.replace(&format!(":{}", x), &params.get(x).unwrap())
+    })
+}
+
 pub async fn run(
     api_call: &Command,
     param_values: HashMap<String, String>,
@@ -31,8 +38,6 @@ pub async fn run(
     let hb_handle = Handlebars::new();
 
     let url = api_call.url.as_str();
-
-    let route_params = api_call.route_params();
 
     let current_env = get_env().expect("env not set");
     let env_data = config.envs.get(&current_env).expect("env not recognized");
@@ -49,9 +54,24 @@ pub async fn run(
         url.to_string()
     };
 
-    let url_to_call = route_params.iter().fold(url_with_env_vars, |acc, x| {
-        acc.replace(&format!(":{}", x), &param_values.get(x).unwrap())
-    });
+    let url_to_call = replace_params(url_with_env_vars, &param_values);
+
+    let input = if !api_call.body.is_empty() {
+        Some(
+            edit(replace_params(
+                hb_handle
+                    .render_template(
+                        &serde_json::to_string_pretty(&api_call.body).unwrap(),
+                        &merged_data,
+                    )
+                    .unwrap(),
+                &param_values,
+            ))
+            .expect("Unable to open system editor"),
+        )
+    } else {
+        None
+    };
 
     let response = handle_request(
         url_to_call,
@@ -62,6 +82,7 @@ pub async fn run(
             .into_iter()
             .map(|(k, v)| (k, hb_handle.render_template(&v, &merged_data).unwrap()))
             .collect::<HashMap<String, String>>(),
+        input,
     )
     .await?;
 
@@ -107,7 +128,7 @@ pub async fn run(
             //         }
             //     }
             // }
-            println!("");
+            // println!("");
         }
         Err(_error) => {
             println!("{}", response);
