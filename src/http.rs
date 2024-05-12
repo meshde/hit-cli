@@ -1,6 +1,7 @@
 use edit::edit;
 use reqwest;
 use serde::Deserialize;
+use std::collections::HashMap;
 use strum::Display;
 
 #[derive(Display, Deserialize, Clone)]
@@ -14,32 +15,34 @@ pub enum HttpMethod {
 pub async fn handle_request(
     url: String,
     http_method: &HttpMethod,
+    headers: &HashMap<String, String>,
 ) -> Result<String, reqwest::Error> {
-    match http_method {
-        HttpMethod::GET => handle_get(url).await,
-        HttpMethod::POST => handle_post(url).await,
-        HttpMethod::PUT => handle_put(url).await,
-        HttpMethod::DELETE => handle_delete(url).await,
-    }
-}
-
-pub async fn handle_get(url: String) -> Result<String, reqwest::Error> {
-    return reqwest::get(url).await?.text().await;
-}
-
-pub async fn handle_post(url: String) -> Result<String, reqwest::Error> {
     let client = reqwest::Client::new();
-    let input = edit("").expect("Unable to open system editor");
-    return client.post(url).json(&input).send().await?.text().await;
-}
+    let method: reqwest::Method = match http_method {
+        HttpMethod::GET => reqwest::Method::GET,
+        HttpMethod::POST => reqwest::Method::POST,
+        HttpMethod::PUT => reqwest::Method::PUT,
+        HttpMethod::DELETE => reqwest::Method::DELETE,
+    };
+    let request = reqwest::Request::new(method, reqwest::Url::parse(&url).expect("Invalid url"));
 
-pub async fn handle_put(url: String) -> Result<String, reqwest::Error> {
-    let client = reqwest::Client::new();
-    let input = edit("").expect("Unable to open system editor");
-    return client.put(url).json(&input).send().await?.text().await;
-}
+    let mut headers_map = reqwest::header::HeaderMap::new();
 
-pub async fn handle_delete(url: String) -> Result<String, reqwest::Error> {
-    let client = reqwest::Client::new();
-    return client.delete(url).send().await?.text().await;
+    headers_map.extend(headers.into_iter().map(|(k, v)| {
+        (
+            reqwest::header::HeaderName::from_bytes(k.as_bytes()).unwrap(),
+            reqwest::header::HeaderValue::from_str(&v).unwrap(),
+        )
+    }));
+    let request_builder = reqwest::RequestBuilder::from_parts(client, request).headers(headers_map);
+
+    let request_builder = match http_method {
+        HttpMethod::POST | HttpMethod::PUT => {
+            let input = edit("").expect("Unable to open system editor");
+            request_builder.json(&input)
+        }
+        _ => request_builder,
+    };
+
+    request_builder.send().await?.text().await
 }

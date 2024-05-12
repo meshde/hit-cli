@@ -9,6 +9,8 @@ use std::io::BufReader;
 pub struct Command {
     pub method: http::HttpMethod,
     pub url: String,
+    #[serde(default)]
+    pub headers: HashMap<String, String>,
 }
 
 impl Command {
