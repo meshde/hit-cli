@@ -2,14 +2,14 @@ use crate::config::{Command, Config};
 use crate::env::get_env;
 use crate::ephenv::get_ephenvs;
 use crate::http::handle_request;
-use crate::input::CustomAutocomplete;
-use arboard::Clipboard;
+// use crate::input::CustomAutocomplete;
+// use arboard::Clipboard;
 use colored_json;
-use crossterm::event::{read, Event, KeyCode};
-use crossterm::terminal;
-use flatten_json_object::Flattener;
+// use crossterm::event::{read, Event, KeyCode};
+// use crossterm::terminal;
+// use flatten_json_object::Flattener;
 use handlebars::Handlebars;
-use inquire::Text;
+// use inquire::Text;
 use regex::Regex;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -17,9 +17,9 @@ use std::error::Error;
 use std::io::stdout;
 use std::io::Write;
 
-fn get_json_value_from_path<'a, 'b>(json: &'a Value, path: &'b str) -> Option<&'a Value> {
-    json.pointer(format!("/{}", path.replace(".", "/")).as_str())
-}
+// fn get_json_value_from_path<'a, 'b>(json: &'a Value, path: &'b str) -> Option<&'a Value> {
+//     json.pointer(format!("/{}", path.replace(".", "/")).as_str())
+// }
 
 pub async fn run(
     api_call: &Command,
@@ -73,40 +73,40 @@ pub async fn run(
             colored_json::write_colored_json(&response_json, &mut out).unwrap();
             out.flush().unwrap();
             writeln!(out, "").unwrap();
-            println!("Press c to enter copy mode or any other key  to exit");
-            terminal::enable_raw_mode().unwrap();
+            // println!("Press c to enter copy mode or any other key  to exit");
+            // terminal::enable_raw_mode().unwrap();
 
-            loop {
-                if let Ok(event) = read() {
-                    if let Event::Key(key) = event {
-                        terminal::disable_raw_mode().unwrap();
-                        if key.code == KeyCode::Char('c') {
-                            let flattened_json = Flattener::new().flatten(&response_json).unwrap();
+            // loop {
+            //     if let Ok(event) = read() {
+            //         if let Event::Key(key) = event {
+            //             terminal::disable_raw_mode().unwrap();
+            //             if key.code == KeyCode::Char('c') {
+            //                 let flattened_json = Flattener::new().flatten(&response_json).unwrap();
 
-                            let json_paths: Vec<String> = flattened_json
-                                .as_object()
-                                .unwrap()
-                                .keys()
-                                .map(|k| k.to_string())
-                                .collect();
+            //                 let json_paths: Vec<String> = flattened_json
+            //                     .as_object()
+            //                     .unwrap()
+            //                     .keys()
+            //                     .map(|k| k.to_string())
+            //                     .collect();
 
-                            let user_json_path = Text::new("Enter the JSON path: ")
-                                .with_autocomplete(CustomAutocomplete::new(json_paths))
-                                .prompt()
-                                .unwrap();
-                            Clipboard::new()
-                                .unwrap()
-                                .set_text(
-                                    get_json_value_from_path(&response_json, &user_json_path)
-                                        .unwrap()
-                                        .to_string(),
-                                )
-                                .unwrap();
-                        }
-                        break;
-                    }
-                }
-            }
+            //                 let user_json_path = Text::new("Enter the JSON path: ")
+            //                     .with_autocomplete(CustomAutocomplete::new(json_paths))
+            //                     .prompt()
+            //                     .unwrap();
+            //                 Clipboard::new()
+            //                     .unwrap()
+            //                     .set_text(
+            //                         get_json_value_from_path(&response_json, &user_json_path)
+            //                             .unwrap()
+            //                             .to_string(),
+            //                     )
+            //                     .unwrap();
+            //             }
+            //             break;
+            //         }
+            //     }
+            // }
             println!("");
         }
         Err(_error) => {
