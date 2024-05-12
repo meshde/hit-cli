@@ -21,18 +21,15 @@ fn get_run_command(config: &Config) -> Command {
 
     for command_name in config.commands() {
         let config_command = config.get_command(&command_name);
-        let route_params = config_command.route_params();
-        let mut subcommand =
-            Command::new(command_name).arg_required_else_help(!route_params.is_empty());
-        for route_param in route_params {
+        let params = config_command.params();
+
+        let mut subcommand = Command::new(command_name).arg_required_else_help(!params.is_empty());
+        for param in params {
             subcommand = subcommand.arg(
-                Arg::new(route_param.to_string())
-                    .long(&route_param.to_string().to_case(Case::Kebab))
-                    .value_name(route_param.to_string())
-                    .help(format!(
-                        "Provide value for the route param :{}",
-                        route_param
-                    )),
+                Arg::new(param.to_string())
+                    .long(&param.to_string().to_case(Case::Kebab))
+                    .value_name(param.to_string())
+                    .help(format!("Provide value for the param :{}", param)),
             )
         }
         command = command.subcommand(subcommand)

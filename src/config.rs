@@ -1,6 +1,8 @@
 use crate::http;
+use array_tool::vec::Union;
 use regex::Regex;
 use serde::Deserialize;
+use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::BufReader;
@@ -11,18 +13,34 @@ pub struct Command {
     pub url: String,
     #[serde(default)]
     pub headers: HashMap<String, String>,
+    pub body: Option<Value>,
+}
+
+fn get_params_from_string(input: &str) -> Vec<String> {
+    let route_param_regex = Regex::new(r":(\w+)").unwrap();
+    route_param_regex
+        .captures_iter(input)
+        .filter_map(|caps| caps.get(1))
+        .map(|word| word.as_str().to_string())
+        .collect::<HashSet<String>>()
+        .into_iter()
+        .collect()
 }
 
 impl Command {
     pub fn route_params(&self) -> Vec<String> {
-        let route_param_regex = Regex::new(r"\/:(\w+)").unwrap();
-        route_param_regex
-            .captures_iter(self.url.as_str())
-            .filter_map(|caps| caps.get(1))
-            .map(|word| word.as_str().to_string())
-            .collect::<HashSet<String>>()
-            .into_iter()
-            .collect()
+        get_params_from_string(self.url.as_str())
+    }
+
+    pub fn body_params(&self) -> Vec<String> {
+        match &self.body {
+            Some(input) => get_params_from_string(&input.to_string()),
+            None => Vec::new(),
+        }
+    }
+
+    pub fn params(&self) -> Vec<String> {
+        self.route_params().union(self.body_params())
     }
 }
 
