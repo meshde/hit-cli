@@ -56,7 +56,7 @@ pub async fn run(
 
     let url_to_call = replace_params(url_with_env_vars, &param_values);
 
-    let input = if !api_call.body.is_empty() {
+    let input = if api_call.body.is_some() {
         Some(
             edit(replace_params(
                 hb_handle

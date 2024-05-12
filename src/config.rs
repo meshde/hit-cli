@@ -2,6 +2,7 @@ use crate::http;
 use array_tool::vec::Union;
 use regex::Regex;
 use serde::Deserialize;
+use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::BufReader;
@@ -12,8 +13,7 @@ pub struct Command {
     pub url: String,
     #[serde(default)]
     pub headers: HashMap<String, String>,
-    #[serde(default)]
-    pub body: HashMap<String, String>,
+    pub body: Option<Value>,
 }
 
 fn get_params_from_string(input: &str) -> Vec<String> {
@@ -33,7 +33,10 @@ impl Command {
     }
 
     pub fn body_params(&self) -> Vec<String> {
-        get_params_from_string(&serde_json::to_string(&self.body).unwrap())
+        match &self.body {
+            Some(input) => get_params_from_string(&input.to_string()),
+            None => Vec::new(),
+        }
     }
 
     pub fn params(&self) -> Vec<String> {
