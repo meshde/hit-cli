@@ -37,7 +37,13 @@ pub async fn handle_request(
     let request_builder = reqwest::RequestBuilder::from_parts(client, request).headers(headers_map);
 
     let request_builder = match body {
-        Some(body) => request_builder.json(&body),
+        Some(body) => {
+            if let Ok(json_body) = serde_json::from_str::<serde_json::Value>(&body) {
+                request_builder.json(&json_body)
+            } else {
+                request_builder.body(body)
+            }
+        }
         None => request_builder,
     };
 
