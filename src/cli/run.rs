@@ -86,7 +86,7 @@ pub async fn run(
     )
     .await?;
 
-    let response_json_result = serde_json::from_str::<Value>(response.as_str());
+    let response_json_result = serde_json::from_str::<Value>(response.body.as_str());
 
     match response_json_result {
         Ok(response_json) => {
@@ -131,7 +131,7 @@ pub async fn run(
             // println!("");
         }
         Err(_error) => {
-            println!("{}", response);
+            println!("{}", response.body);
         }
     };
     Ok(())
