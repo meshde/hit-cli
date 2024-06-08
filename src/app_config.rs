@@ -82,7 +82,8 @@ pub fn get_app_config_file_path() -> String {
         .to_string_lossy()
         .into_owned()
 }
-pub fn get_app_config() -> Option<AppConfig> {
+
+pub fn get_app_config() -> AppConfig {
     let config_file_path = get_app_config_file_path();
     if let Ok(file) = File::open(config_file_path) {
         let reader = BufReader::new(file);
@@ -90,5 +91,5 @@ pub fn get_app_config() -> Option<AppConfig> {
         let app_config = serde_json::from_reader(reader).unwrap();
         return app_config;
     }
-    None
+    AppConfig::new()
 }
