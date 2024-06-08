@@ -1,3 +1,4 @@
+use crate::http::Response;
 use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 use serde_json;
@@ -13,6 +14,8 @@ pub struct AppConfig {
     envs: HashMap<String, String>,
     #[serde(default)]
     ephenvs: HashMap<String, HashMap<String, String>>,
+    #[serde(default)]
+    prev_request: HashMap<String, Response>,
 }
 
 impl AppConfig {
@@ -20,6 +23,7 @@ impl AppConfig {
         AppConfig {
             envs: HashMap::new(),
             ephenvs: HashMap::new(),
+            prev_request: HashMap::new(),
         }
     }
 
@@ -62,6 +66,15 @@ impl AppConfig {
                 new_data
             });
         self.save();
+    }
+
+    pub fn set_prev_request(&mut self, prev_request: Response) {
+        self.prev_request.insert(get_config_key(), prev_request);
+        self.save();
+    }
+
+    pub fn get_prev_request(&self) -> Option<&Response> {
+        self.prev_request.get(&get_config_key())
     }
 }
 

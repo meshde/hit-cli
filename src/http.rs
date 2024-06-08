@@ -1,6 +1,5 @@
-use hyper::{HeaderMap, StatusCode};
 use reqwest;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use strum::Display;
 
@@ -12,10 +11,11 @@ pub enum HttpMethod {
     DELETE,
 }
 
+#[derive(Deserialize, Serialize, Clone)]
 pub struct Response {
     pub url: String,
-    pub status: StatusCode,
-    pub headers: HeaderMap,
+    pub status: u16,
+    pub headers: HashMap<String, String>,
     pub body: String,
 }
 
@@ -56,11 +56,16 @@ pub async fn handle_request(
     };
 
     let response = request_builder.send().await?;
+    let mut response_headers = HashMap::new();
+
+    for (key, value) in response.headers().iter() {
+        response_headers.insert(key.to_string(), value.to_str().unwrap().to_string());
+    }
 
     Ok(Response {
         url: response.url().clone().to_string(),
-        status: response.status(),
-        headers: response.headers().clone(),
+        status: response.status().as_u16(),
+        headers: response_headers,
         body: response.text().await?,
     })
 }

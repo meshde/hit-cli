@@ -1,3 +1,4 @@
+use crate::app_config::get_app_config;
 use crate::config::{Command, Config};
 use crate::env::get_env;
 use crate::ephenv::get_ephenvs;
@@ -85,6 +86,8 @@ pub async fn run(
         input,
     )
     .await?;
+
+    get_app_config().set_prev_request(response.clone());
 
     let response_json_result = serde_json::from_str::<Value>(response.body.as_str());
 
