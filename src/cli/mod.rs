@@ -1,5 +1,6 @@
 mod env;
 mod ephenv;
+mod last;
 mod run;
 
 use crate::config::Config;
@@ -14,6 +15,8 @@ enum StaticCommand {
     Env(env::EnvCommand),
     #[command(subcommand)]
     Ephenv(ephenv::EphenvCommand),
+    #[command(subcommand)]
+    Last(last::LastCommand),
 }
 
 fn get_run_command(config: &Config) -> Command {
@@ -79,6 +82,7 @@ pub async fn init() -> ExitCode {
             match static_command_matches {
                 StaticCommand::Env(args) => env::init(args),
                 StaticCommand::Ephenv(args) => ephenv::init(args),
+                StaticCommand::Last(args) => last::init(args),
             }
         }
     };

@@ -1,5 +1,5 @@
 use reqwest;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use strum::Display;
 
@@ -11,12 +11,20 @@ pub enum HttpMethod {
     DELETE,
 }
 
+#[derive(Deserialize, Serialize, Clone)]
+pub struct Response {
+    pub url: String,
+    pub status: u16,
+    pub headers: HashMap<String, String>,
+    pub body: String,
+}
+
 pub async fn handle_request(
     url: String,
     http_method: &HttpMethod,
     headers: &HashMap<String, String>,
     body: Option<String>,
-) -> Result<String, reqwest::Error> {
+) -> Result<Response, reqwest::Error> {
     let client = reqwest::Client::new();
     let method: reqwest::Method = match http_method {
         HttpMethod::GET => reqwest::Method::GET,
@@ -47,5 +55,17 @@ pub async fn handle_request(
         None => request_builder,
     };
 
-    request_builder.send().await?.text().await
+    let response = request_builder.send().await?;
+    let mut response_headers = HashMap::new();
+
+    for (key, value) in response.headers().iter() {
+        response_headers.insert(key.to_string(), value.to_str().unwrap().to_string());
+    }
+
+    Ok(Response {
+        url: response.url().clone().to_string(),
+        status: response.status().as_u16(),
+        headers: response_headers,
+        body: response.text().await?,
+    })
 }
