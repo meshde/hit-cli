@@ -9,7 +9,6 @@ edition = "2021"
 arboard = "3.3.2"
 array_tool = "1.0.3"
 clap = {version="4.5.4", features=["derive", "string"]}
-clap_autocomplete = "0.4.1"
 colored = "2.1.0"
 colored_json = "5.0.0"
 commands = "0.0.5"
