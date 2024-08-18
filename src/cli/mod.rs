@@ -5,6 +5,7 @@ mod run;
 
 use crate::config::Config;
 use clap::{command, Arg, Command, FromArgMatches as _, Parser, Subcommand};
+use clap_autocomplete;
 use convert_case::{Case, Casing};
 use std::collections::HashMap;
 use std::process::ExitCode;
@@ -46,50 +47,61 @@ pub async fn init() -> ExitCode {
         .arg_required_else_help(true)
         .subcommand(get_run_command(&config));
 
+    let cli = clap_autocomplete::add_subcommand(cli);
     let cli = StaticCommand::augment_subcommands(cli);
 
+    let cli_clone = cli.clone();
     let matches = cli.get_matches();
-
-    let output = match matches.subcommand_name().unwrap() {
-        "run" => {
-            let run_subcommand_matches = matches.subcommand_matches("run").unwrap();
-
-            let run_subcommand_name = run_subcommand_matches.subcommand_name().unwrap();
-            let mut args_map = HashMap::new();
-
-            let run_subcommand_matches = run_subcommand_matches
-                .subcommand_matches(&run_subcommand_name)
-                .unwrap();
-
-            for arg_id in run_subcommand_matches.ids() {
-                args_map.insert(
-                    arg_id.to_string(),
-                    run_subcommand_matches
-                        .get_one::<String>(arg_id.as_str())
-                        .unwrap()
-                        .to_string(),
-                );
-            }
-            run::run(
-                &config.get_command(&run_subcommand_name.to_string()),
-                args_map,
-            )
-            .await
+    if let Some(result) = clap_autocomplete::test_subcommand(&matches, cli_clone) {
+        if let Err(err) = result {
+            eprintln!("Insufficient permissions: {err}");
+            ExitCode::FAILURE
+        } else {
+            ExitCode::SUCCESS
         }
-        _ => {
-            let static_command_matches = StaticCommand::from_arg_matches(&matches).unwrap();
-
-            match static_command_matches {
-                StaticCommand::Env(args) => env::init(args),
-                StaticCommand::Ephenv(args) => ephenv::init(args),
-                StaticCommand::Last(args) => last::init(args),
-            }
-        }
-    };
-
-    if let Err(_e) = output {
-        ExitCode::FAILURE
     } else {
-        ExitCode::SUCCESS
+        let output = match matches.subcommand_name().unwrap() {
+            "run" => {
+                let run_subcommand_matches = matches.subcommand_matches("run").unwrap();
+
+                let run_subcommand_name = run_subcommand_matches.subcommand_name().unwrap();
+                let mut args_map = HashMap::new();
+
+                let run_subcommand_matches = run_subcommand_matches
+                    .subcommand_matches(&run_subcommand_name)
+                    .unwrap();
+
+                for arg_id in run_subcommand_matches.ids() {
+                    args_map.insert(
+                        arg_id.to_string(),
+                        run_subcommand_matches
+                            .get_one::<String>(arg_id.as_str())
+                            .unwrap()
+                            .to_string(),
+                    );
+                }
+                run::run(
+                    &config.get_command(&run_subcommand_name.to_string()),
+                    args_map,
+                )
+                .await
+            }
+            _ => {
+                let static_command_matches = StaticCommand::from_arg_matches(&matches).unwrap();
+
+                match static_command_matches {
+                    StaticCommand::Env(args) => env::init(args),
+                    StaticCommand::Ephenv(args) => ephenv::init(args),
+                    StaticCommand::Last(args) => last::init(args),
+                }
+            }
+        };
+
+        if let Err(_e) = output {
+            eprintln!("{_e}");
+            ExitCode::FAILURE
+        } else {
+            ExitCode::SUCCESS
+        }
     }
 }
