@@ -5,6 +5,7 @@ mod run;
 
 use crate::config::Config;
 use clap::{command, Arg, Command, FromArgMatches as _, Parser, Subcommand};
+use clap_complete::CompleteEnv;
 use convert_case::{Case, Casing};
 use std::collections::HashMap;
 use std::process::ExitCode;
@@ -42,11 +43,14 @@ fn get_run_command(config: &Config) -> Command {
 
 pub async fn init() -> ExitCode {
     let config = Config::new();
+
     let cli = Command::new("hit")
         .arg_required_else_help(true)
         .subcommand(get_run_command(&config));
 
     let cli = StaticCommand::augment_subcommands(cli);
+
+    CompleteEnv::with_factory(|| cli.clone()).complete();
 
     let matches = cli.get_matches();
 
