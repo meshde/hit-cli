@@ -1,13 +1,16 @@
 use crate::http;
 use array_tool::vec::Union;
 use regex::Regex;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
-use std::fs::File;
-use std::io::BufReader;
+use std::fs;
+use std::io::{BufReader, Write};
+use std::path::PathBuf;
 
-#[derive(Deserialize, Clone)]
+const CONFIG_DIR: &str = ".hit";
+
+#[derive(Deserialize, Serialize, Clone)]
 pub struct Command {
     pub method: http::HttpMethod,
     pub url: String,
@@ -44,15 +47,38 @@ impl Command {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 pub struct Config {
-    commands: HashMap<String, Command>,
     pub envs: HashMap<String, HashMap<String, String>>,
+    commands: HashMap<String, Command>,
 }
 
 impl Config {
     pub fn new() -> Config {
-        let file = File::open(".hitconfig.json").expect("config file missing");
+        let file_path = PathBuf::from(CONFIG_DIR).join("config.json");
+
+        // Create the directory if it doesn't exist
+        if let Some(parent_dir) = file_path.parent() {
+            fs::create_dir_all(parent_dir).expect("Failed to create directory");
+        }
+
+        // Create the file if it doesn't exist
+        if !file_path.exists() {
+            let mut file = fs::File::create(&file_path).expect("Failed to create file");
+            let init_config = Config {
+                commands: HashMap::new(),
+                envs: HashMap::new(),
+            };
+
+            file.write_all(
+                serde_json::to_string_pretty(&init_config)
+                    .unwrap()
+                    .as_bytes(),
+            )
+            .expect("could not save initial config")
+        }
+
+        let file = fs::File::open(file_path).expect("config file missing");
         let reader = BufReader::new(file);
 
         let config: Config = serde_json::from_reader(reader).expect("Error while reading JSON");

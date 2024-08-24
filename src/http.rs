@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use strum::Display;
 
-#[derive(Display, Deserialize, Clone)]
+#[derive(Display, Deserialize, Serialize, Clone)]
 pub enum HttpMethod {
     GET,
     POST,
