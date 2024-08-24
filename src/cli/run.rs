@@ -79,7 +79,7 @@ pub async fn run(
 
     get_app_config().set_prev_request(response.clone());
 
-    let response_json_result = serde_json::from_str::<Value>(response.body.as_str());
+    let response_json_result = serde_json::from_str::<Value>(response.clone().body.as_str());
 
     match response_json_result {
         Ok(response_json) => {
@@ -87,10 +87,14 @@ pub async fn run(
             colored_json::write_colored_json(&response_json, &mut out).unwrap();
             out.flush().unwrap();
             writeln!(out, "").unwrap();
+            api_call
+                .run_post_command_script(&serde_json::to_string_pretty(&response.clone()).unwrap())
+                .unwrap();
         }
         Err(_error) => {
             println!("{}", response.body);
         }
     };
+
     Ok(())
 }

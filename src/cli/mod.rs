@@ -24,7 +24,7 @@ fn get_run_command(config: &Config) -> Command {
     let mut command = Command::new("run").arg_required_else_help(true);
 
     for command_name in config.commands() {
-        let config_command = config.get_command(&command_name);
+        let config_command = config.get_command(command_name.clone());
         let params = config_command.params();
 
         let mut subcommand = Command::new(command_name).arg_required_else_help(!params.is_empty());
@@ -75,7 +75,7 @@ pub async fn init() -> ExitCode {
                 );
             }
             run::run(
-                &config.get_command(&run_subcommand_name.to_string()),
+                &config.get_command(run_subcommand_name.to_string()),
                 args_map,
             )
             .await
