@@ -5,18 +5,29 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 use std::fs;
-use std::io::{BufReader, Write};
+use std::io::{BufReader, Error, Write};
 use std::path::PathBuf;
+use std::process::Command as StdCommand;
+use tempfile::NamedTempFile;
 
 const CONFIG_DIR: &str = ".hit";
 
 #[derive(Deserialize, Serialize, Clone)]
+pub struct PostScriptConfig {
+    pub command: String,
+    pub file: String,
+}
+
+#[derive(Deserialize, Serialize, Clone)]
 pub struct Command {
+    #[serde(skip)]
+    pub name: String,
     pub method: http::HttpMethod,
     pub url: String,
     #[serde(default)]
     pub headers: HashMap<String, String>,
     pub body: Option<Value>,
+    pub postscript: Option<PostScriptConfig>,
 }
 
 fn get_params_from_string(input: &str) -> Vec<String> {
@@ -44,6 +55,28 @@ impl Command {
 
     pub fn params(&self) -> Vec<String> {
         self.route_params().union(self.body_params())
+    }
+
+    pub fn run_post_command_script(&self, command_response: &str) -> Result<(), Error> {
+        if let Some(postscript) = self.postscript.clone() {
+            let script_path = PathBuf::from(CONFIG_DIR)
+                .join("postscripts")
+                .join(postscript.file);
+
+            if script_path.exists() {
+                let mut response_file = NamedTempFile::new()?;
+                response_file
+                    .write_all(command_response.as_bytes())
+                    .expect("could not save response to temp file");
+
+                StdCommand::new(postscript.command)
+                    .arg(script_path)
+                    .env("HIT_RESPONSE_PATH", response_file.path())
+                    .status()
+                    .expect("failed to run postscript");
+            }
+        }
+        Ok(())
     }
 }
 
@@ -89,10 +122,14 @@ impl Config {
         self.commands.keys().map(|key| key.clone()).collect()
     }
 
-    pub fn get_command(&self, command: &String) -> Command {
-        self.commands
-            .get(command)
-            .expect(&format!("Command not recognized: {}", command))
-            .clone()
+    pub fn get_command(&self, command_name: String) -> Command {
+        let mut command = self
+            .commands
+            .get(&command_name)
+            .expect(&format!("Command not recognized: {}", command_name))
+            .clone();
+
+        command.name = command_name;
+        return command;
     }
 }
