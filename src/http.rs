@@ -34,14 +34,18 @@ pub async fn handle_request(
     };
     let request = reqwest::Request::new(method, reqwest::Url::parse(&url).expect("Invalid url"));
 
+    let mut owned_headers = headers.clone();
+    owned_headers.insert("User-Agent".to_string(), "hit-cli".to_string());
+
     let mut headers_map = reqwest::header::HeaderMap::new();
 
-    headers_map.extend(headers.into_iter().map(|(k, v)| {
+    headers_map.extend(owned_headers.into_iter().map(|(k, v)| {
         (
             reqwest::header::HeaderName::from_bytes(k.as_bytes()).unwrap(),
             reqwest::header::HeaderValue::from_str(&v).unwrap(),
         )
     }));
+
     let request_builder = reqwest::RequestBuilder::from_parts(client, request).headers(headers_map);
 
     let request_builder = match body {
