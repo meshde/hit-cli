@@ -20,8 +20,6 @@ pub struct PostScriptConfig {
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct Command {
-    #[serde(skip)]
-    pub name: String,
     pub method: http::HttpMethod,
     pub url: String,
     #[serde(default)]
@@ -83,7 +81,14 @@ impl Command {
 #[derive(Deserialize, Serialize)]
 pub struct Config {
     pub envs: HashMap<String, HashMap<String, String>>,
-    commands: HashMap<String, Command>,
+    pub commands: HashMap<String, Box<CommandType>>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum CommandType {
+    Command(Command),
+    NestedCommand(HashMap<String, Box<CommandType>>),
 }
 
 impl Config {
@@ -122,14 +127,13 @@ impl Config {
         self.commands.keys().map(|key| key.clone()).collect()
     }
 
-    pub fn get_command(&self, command_name: String) -> Command {
-        let mut command = self
+    pub fn get_command(&self, command_name: String) -> &CommandType {
+        let command = self
             .commands
             .get(&command_name)
             .expect(&format!("Command not recognized: {}", command_name))
             .clone();
 
-        command.name = command_name;
         return command;
     }
 }
