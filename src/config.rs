@@ -1,5 +1,6 @@
 use crate::http;
 use array_tool::vec::Union;
+use convert_case::{Case, Casing};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -55,7 +56,11 @@ impl Command {
         self.route_params().union(self.body_params())
     }
 
-    pub fn run_post_command_script(&self, command_response: &str) -> Result<(), Error> {
+    pub fn run_post_command_script(
+        &self,
+        command_response: &str,
+        env_vars: &HashMap<String, String>,
+    ) -> Result<(), Error> {
         if let Some(postscript) = self.postscript.clone() {
             let script_path = PathBuf::from(CONFIG_DIR)
                 .join("postscripts")
@@ -67,11 +72,18 @@ impl Command {
                     .write_all(command_response.as_bytes())
                     .expect("could not save response to temp file");
 
-                StdCommand::new(postscript.command)
+                let hit_response_path_var = "HIT_RESPONSE_PATH";
+                let mut command = StdCommand::new(postscript.command);
+                command
                     .arg(script_path)
-                    .env("HIT_RESPONSE_PATH", response_file.path())
-                    .status()
-                    .expect("failed to run postscript");
+                    .env(hit_response_path_var, response_file.path());
+
+                for (env_var, env_var_value) in env_vars {
+                    let postscript_var_name = format!("HIT_{}", env_var.to_case(Case::UpperSnake));
+                    command.env(postscript_var_name, env_var_value);
+                }
+
+                command.status().expect("failed to run postscript");
             }
         }
         Ok(())
@@ -121,19 +133,5 @@ impl Config {
 
         let config: Config = serde_json::from_reader(reader).expect("Error while reading JSON");
         return config;
-    }
-
-    pub fn commands(&self) -> Vec<String> {
-        self.commands.keys().map(|key| key.clone()).collect()
-    }
-
-    pub fn get_command(&self, command_name: String) -> &CommandType {
-        let command = self
-            .commands
-            .get(&command_name)
-            .expect(&format!("Command not recognized: {}", command_name))
-            .clone();
-
-        return command;
     }
 }

@@ -87,8 +87,14 @@ pub async fn run(
             colored_json::write_colored_json(&response_json, &mut out).unwrap();
             out.flush().unwrap();
             writeln!(out, "").unwrap();
+            let mut postscript_env_vars = merged_data.clone();
+            postscript_env_vars.extend(param_values);
+
             api_call
-                .run_post_command_script(&serde_json::to_string_pretty(&response.clone()).unwrap())
+                .run_post_command_script(
+                    &serde_json::to_string_pretty(&response.clone()).unwrap(),
+                    &postscript_env_vars,
+                )
                 .unwrap();
         }
         Err(_error) => {
