@@ -1,5 +1,6 @@
 mod env;
 mod ephenv;
+mod import;
 mod last;
 mod run;
 
@@ -18,6 +19,7 @@ enum StaticCommand {
     Ephenv(ephenv::EphenvCommand),
     #[command(subcommand)]
     Last(last::LastCommand),
+    Import(import::ImportArguments),
 }
 
 fn formulate_command(
@@ -119,6 +121,7 @@ pub async fn init() -> ExitCode {
                 StaticCommand::Env(args) => env::init(args),
                 StaticCommand::Ephenv(args) => ephenv::init(args),
                 StaticCommand::Last(args) => last::init(args),
+                StaticCommand::Import(args) => import::init(args),
             }
         }
     };

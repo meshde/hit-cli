@@ -13,13 +13,13 @@ use tempfile::NamedTempFile;
 
 const CONFIG_DIR: &str = ".hit";
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct PostScriptConfig {
     pub command: String,
     pub file: String,
 }
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct Command {
     pub method: http::HttpMethod,
     pub url: String,
@@ -90,23 +90,26 @@ impl Command {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct Config {
     pub envs: HashMap<String, HashMap<String, String>>,
     pub commands: HashMap<String, Box<CommandType>>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(untagged)]
 pub enum CommandType {
     Command(Command),
     NestedCommand(HashMap<String, Box<CommandType>>),
 }
 
+fn get_file_path() -> PathBuf {
+    PathBuf::from(CONFIG_DIR).join("config.json")
+}
+
 impl Config {
     pub fn new() -> Config {
-        let file_path = PathBuf::from(CONFIG_DIR).join("config.json");
-
+        let file_path = get_file_path();
         // Create the directory if it doesn't exist
         if let Some(parent_dir) = file_path.parent() {
             fs::create_dir_all(parent_dir).expect("Failed to create directory");
@@ -114,18 +117,12 @@ impl Config {
 
         // Create the file if it doesn't exist
         if !file_path.exists() {
-            let mut file = fs::File::create(&file_path).expect("Failed to create file");
             let init_config = Config {
                 commands: HashMap::new(),
                 envs: HashMap::new(),
             };
 
-            file.write_all(
-                serde_json::to_string_pretty(&init_config)
-                    .unwrap()
-                    .as_bytes(),
-            )
-            .expect("could not save initial config")
+            init_config.save().expect("could not save initial config")
         }
 
         let file = fs::File::open(file_path).expect("config file missing");
@@ -133,5 +130,11 @@ impl Config {
 
         let config: Config = serde_json::from_reader(reader).expect("Error while reading JSON");
         return config;
+    }
+    pub fn save(&self) -> Result<(), Error> {
+        let file_path = get_file_path();
+        let mut file = fs::File::create(&file_path).expect("Failed to create file");
+
+        file.write_all(serde_json::to_string_pretty(&self).unwrap().as_bytes())
     }
 }

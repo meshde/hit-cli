@@ -3,12 +3,13 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use strum::Display;
 
-#[derive(Display, Deserialize, Serialize, Clone)]
+#[derive(Display, Deserialize, Serialize, Clone, Debug)]
 pub enum HttpMethod {
     GET,
     POST,
     PUT,
     DELETE,
+    PATCH,
 }
 
 #[derive(Deserialize, Serialize, Clone)]
@@ -31,6 +32,7 @@ pub async fn handle_request(
         HttpMethod::POST => reqwest::Method::POST,
         HttpMethod::PUT => reqwest::Method::PUT,
         HttpMethod::DELETE => reqwest::Method::DELETE,
+        HttpMethod::PATCH => reqwest::Method::PATCH,
     };
     let request = reqwest::Request::new(method, reqwest::Url::parse(&url).expect("Invalid url"));
 
