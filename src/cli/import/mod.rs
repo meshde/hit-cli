@@ -104,7 +104,10 @@ fn generate_config(spec: &OpenAPI) -> Result<Config, Box<dyn Error>> {
             // Derive command name from operationId or path
             let command_name = if let Some(op_id) = &operation.operation_id {
                 // Convert camelCase or PascalCase to kebab-case
-                op_id.to_case(Case::Kebab)
+                let name = op_id.replace('/', "-").to_case(Case::Kebab);
+                name.strip_prefix(&(tag.clone() + "-"))
+                    .unwrap_or(&name)
+                    .to_string()
             } else {
                 // Use path as fallback, cleaned up
                 let clean_path = path.replace('/', "-").trim_matches('-').to_string();
