@@ -5,7 +5,8 @@ mod run;
 
 use crate::config::{Command as ConfigCommand, CommandType as ConfigCommandType, Config};
 use clap::{command, Arg, ArgMatches, Command, FromArgMatches as _, Parser, Subcommand};
-use clap_complete::CompleteEnv;
+use clap_complete::{generate, shells::{Zsh}, CompleteEnv};
+use std::io;
 use convert_case::{Case, Casing};
 use std::collections::HashMap;
 use std::process::ExitCode;
@@ -18,6 +19,11 @@ enum StaticCommand {
     Ephenv(ephenv::EphenvCommand),
     #[command(subcommand)]
     Last(last::LastCommand),
+    #[command(arg_required_else_help = true)]
+    Completions {
+        #[arg(value_enum)]
+        shell: clap_complete::Shell,
+    },
 }
 
 fn formulate_command(
@@ -95,8 +101,20 @@ pub async fn init() -> ExitCode {
 
     let cli = StaticCommand::augment_subcommands(cli);
 
+    if let Some(comp_var) = std::env::var_os("SHELL") {
+        let shell_path = comp_var.to_string_lossy();
+        if shell_path.contains("zsh") {
+            // Generate zsh completions
+            if let Some("_COMPLETE") = std::env::var_os("_COMPLETE").map(|v| v.to_string_lossy().into_owned()).as_deref() {
+                generate(Zsh, &mut cli.clone(), "hit", &mut io::stdout());
+                std::process::exit(0);
+            }
+        }
+    }
+    
     CompleteEnv::with_factory(|| cli.clone()).complete();
 
+    let cli_clone = cli.clone();
     let matches = cli.get_matches();
 
     let output = match matches.subcommand_name().unwrap() {
@@ -119,6 +137,10 @@ pub async fn init() -> ExitCode {
                 StaticCommand::Env(args) => env::init(args),
                 StaticCommand::Ephenv(args) => ephenv::init(args),
                 StaticCommand::Last(args) => last::init(args),
+                StaticCommand::Completions { shell } => {
+                    generate(shell, &mut cli_clone.clone(), "hit", &mut std::io::stdout());
+                    Ok(())
+                },
             }
         }
     };
