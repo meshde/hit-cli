@@ -104,7 +104,6 @@ pub async fn init() -> ExitCode {
     if let Some(comp_var) = std::env::var_os("SHELL") {
         let shell_path = comp_var.to_string_lossy();
         if shell_path.contains("zsh") {
-            // Generate zsh completions
             if let Some("_COMPLETE") = std::env::var_os("_COMPLETE").map(|v| v.to_string_lossy().into_owned()).as_deref() {
                 generate(Zsh, &mut cli.clone(), "hit", &mut io::stdout());
                 std::process::exit(0);
