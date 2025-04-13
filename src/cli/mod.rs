@@ -11,6 +11,7 @@ use std::collections::HashMap;
 use std::process::ExitCode;
 
 #[derive(Debug, Parser)]
+#[command(version)]
 enum StaticCommand {
     #[command(subcommand)]
     Env(env::EnvCommand),
