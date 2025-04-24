@@ -24,8 +24,6 @@ pub fn init(args: ImportArguments) -> Result<(), Box<dyn std::error::Error>> {
     // Generate configuration
     let config = generate_config(&spec)?;
 
-    println!("{:?}", config);
-
     config.save().expect("could not create config file");
     Ok(())
 }
