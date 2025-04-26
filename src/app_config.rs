@@ -90,6 +90,13 @@ fn get_app_config_dir() -> PathBuf {
 }
 
 pub fn get_app_config_file_path() -> String {
+    #[cfg(test)]
+    {
+        if let Some(test_path) = crate::fixtures::get_test_config_path() {
+            return test_path;
+        }
+    }
+    
     get_app_config_dir()
         .join("config.json")
         .to_string_lossy()
