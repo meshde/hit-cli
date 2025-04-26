@@ -39,6 +39,7 @@ impl AppConfig {
 
         file.write_all(json_string.as_bytes())
             .expect("could not save app config");
+        file.sync_data().unwrap();
     }
 
     pub fn get_current_env(&self) -> Option<&String> {
@@ -90,7 +91,13 @@ fn get_app_config_dir() -> PathBuf {
 }
 
 pub fn get_app_config_file_path() -> String {
-    get_app_config_dir()
+    let app_config_dir = if let Ok(env_dir) = env::var("APP_CONFIG_DIR") {
+        PathBuf::from(env_dir)
+    } else {
+        get_app_config_dir()
+    };
+
+    app_config_dir
         .join("config.json")
         .to_string_lossy()
         .into_owned()

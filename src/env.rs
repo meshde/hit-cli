@@ -15,5 +15,11 @@ pub fn set_env(env: String) -> () {
 }
 
 pub fn list_envs() -> Vec<String> {
-    Config::new().envs.keys().map(|k| k.clone()).collect()
+    let mut envs = Config::new()
+        .envs
+        .keys()
+        .map(|k| k.clone())
+        .collect::<Vec<String>>();
+    envs.sort();
+    envs
 }
