@@ -1,0 +1,191 @@
+---
+source: tests/import_tests.rs
+expression: hit_config
+---
+{
+  "commands": {
+    "pet": {
+      "add-pet": {
+        "body": {
+          "category": {},
+          "id": 0,
+          "name": "",
+          "photoUrls": [],
+          "status": "",
+          "tags": []
+        },
+        "headers": {},
+        "method": "POST",
+        "postscript": null,
+        "url": "{{API_URL}}/pet"
+      },
+      "delete-pet": {
+        "body": null,
+        "headers": {},
+        "method": "DELETE",
+        "postscript": null,
+        "url": "{{API_URL}}/pet/:petId"
+      },
+      "find-pets-by-status": {
+        "body": null,
+        "headers": {},
+        "method": "GET",
+        "postscript": null,
+        "url": "{{API_URL}}/pet/findByStatus?status=:status"
+      },
+      "find-pets-by-tags": {
+        "body": null,
+        "headers": {},
+        "method": "GET",
+        "postscript": null,
+        "url": "{{API_URL}}/pet/findByTags?tags=:tags"
+      },
+      "get-pet-by-id": {
+        "body": null,
+        "headers": {},
+        "method": "GET",
+        "postscript": null,
+        "url": "{{API_URL}}/pet/:petId"
+      },
+      "update-pet": {
+        "body": {
+          "category": {},
+          "id": 0,
+          "name": "",
+          "photoUrls": [],
+          "status": "",
+          "tags": []
+        },
+        "headers": {},
+        "method": "PUT",
+        "postscript": null,
+        "url": "{{API_URL}}/pet"
+      },
+      "update-pet-with-form": {
+        "body": null,
+        "headers": {},
+        "method": "PUT",
+        "postscript": null,
+        "url": "{{API_URL}}/pet/:petId?name=:name&status=:status"
+      },
+      "upload-file": {
+        "body": null,
+        "headers": {},
+        "method": "GET",
+        "postscript": null,
+        "url": "{{API_URL}}/pet/:petId/uploadImage?additionalMetadata=:additionalMetadata"
+      }
+    },
+    "store": {
+      "delete-order": {
+        "body": null,
+        "headers": {},
+        "method": "DELETE",
+        "postscript": null,
+        "url": "{{API_URL}}/store/order/:orderId"
+      },
+      "get-inventory": {
+        "body": null,
+        "headers": {},
+        "method": "GET",
+        "postscript": null,
+        "url": "{{API_URL}}/store/inventory"
+      },
+      "get-order-by-id": {
+        "body": null,
+        "headers": {},
+        "method": "GET",
+        "postscript": null,
+        "url": "{{API_URL}}/store/order/:orderId"
+      },
+      "place-order": {
+        "body": {
+          "complete": false,
+          "id": 0,
+          "petId": 0,
+          "quantity": 0,
+          "shipDate": "",
+          "status": ""
+        },
+        "headers": {},
+        "method": "GET",
+        "postscript": null,
+        "url": "{{API_URL}}/store/order"
+      }
+    },
+    "user": {
+      "create-user": {
+        "body": {
+          "email": "",
+          "firstName": "",
+          "id": 0,
+          "lastName": "",
+          "password": "",
+          "phone": "",
+          "userStatus": 0,
+          "username": ""
+        },
+        "headers": {},
+        "method": "POST",
+        "postscript": null,
+        "url": "{{API_URL}}/user"
+      },
+      "create-users-with-list-input": {
+        "body": {},
+        "headers": {},
+        "method": "POST",
+        "postscript": null,
+        "url": "{{API_URL}}/user/createWithList"
+      },
+      "delete-user": {
+        "body": null,
+        "headers": {},
+        "method": "DELETE",
+        "postscript": null,
+        "url": "{{API_URL}}/user/:username"
+      },
+      "get-user-by-name": {
+        "body": null,
+        "headers": {},
+        "method": "GET",
+        "postscript": null,
+        "url": "{{API_URL}}/user/:username"
+      },
+      "login-user": {
+        "body": null,
+        "headers": {},
+        "method": "GET",
+        "postscript": null,
+        "url": "{{API_URL}}/user/login?username=:username&password=:password"
+      },
+      "logout-user": {
+        "body": null,
+        "headers": {},
+        "method": "GET",
+        "postscript": null,
+        "url": "{{API_URL}}/user/logout"
+      },
+      "update-user": {
+        "body": {
+          "email": "",
+          "firstName": "",
+          "id": 0,
+          "lastName": "",
+          "password": "",
+          "phone": "",
+          "userStatus": 0,
+          "username": ""
+        },
+        "headers": {},
+        "method": "PUT",
+        "postscript": null,
+        "url": "{{API_URL}}/user/:username"
+      }
+    }
+  },
+  "envs": {
+    "prod": {
+      "API_URL": "https://petstore3.swagger.io/api/v3"
+    }
+  }
+}
