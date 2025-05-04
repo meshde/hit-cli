@@ -1,5 +1,5 @@
-use crate::command::Command;
 use crate::constants::CONFIG_DIR;
+use crate::core::command::Command;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;

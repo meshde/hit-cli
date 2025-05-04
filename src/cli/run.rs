@@ -1,9 +1,9 @@
-use crate::app_config::get_app_config;
-use crate::command::Command;
-use crate::config::Config;
-use crate::env::get_env;
-use crate::ephenv::get_ephenvs;
-use crate::http::handle_request;
+use crate::core::app_config::get_app_config;
+use crate::core::command::Command;
+use crate::core::config::Config;
+use crate::core::env::get_env;
+use crate::core::ephenv::get_ephenvs;
+use crate::utils::http::handle_request;
 use colored_json;
 use edit::edit;
 use handlebars::Handlebars;

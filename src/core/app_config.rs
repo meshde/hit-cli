@@ -1,4 +1,4 @@
-use crate::http::Response;
+use crate::utils::http::Response;
 use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 use serde_json;

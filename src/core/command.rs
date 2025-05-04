@@ -1,5 +1,5 @@
 use crate::constants::CONFIG_DIR;
-use crate::http;
+use crate::utils::http;
 use array_tool::vec::Union;
 use convert_case::{Case, Casing};
 use regex::Regex;
