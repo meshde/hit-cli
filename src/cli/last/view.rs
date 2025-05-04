@@ -1,5 +1,5 @@
-use crate::app_config::get_app_config;
-use crate::input::CustomAutocomplete;
+use crate::core::app_config::get_app_config;
+use crate::utils::input::CustomAutocomplete;
 use arboard::Clipboard;
 use colored_json;
 use crossterm::event::{read, Event, KeyCode};

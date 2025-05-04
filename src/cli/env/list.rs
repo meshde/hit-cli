@@ -1,4 +1,4 @@
-use crate::env::{get_env, list_envs};
+use crate::core::env::{get_env, list_envs};
 use colored::Colorize;
 
 pub fn init() -> Result<(), Box<dyn std::error::Error>> {

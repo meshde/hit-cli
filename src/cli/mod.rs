@@ -4,7 +4,8 @@ mod import;
 mod last;
 mod run;
 
-use crate::config::{Command as ConfigCommand, CommandType as ConfigCommandType, Config};
+use crate::core::command::Command as ConfigCommand;
+use crate::core::config::{CommandType as ConfigCommandType, Config};
 use clap::{command, Arg, ArgMatches, Command, FromArgMatches as _, Parser, Subcommand};
 use clap_complete::CompleteEnv;
 use convert_case::{Case, Casing};
@@ -12,6 +13,7 @@ use std::collections::HashMap;
 use std::process::ExitCode;
 
 #[derive(Debug, Parser)]
+#[command(version)]
 enum StaticCommand {
     #[command(subcommand)]
     Env(env::EnvCommand),

@@ -1,17 +1,15 @@
-use crate::http;
+use crate::constants::CONFIG_DIR;
+use crate::utils::http;
 use array_tool::vec::Union;
 use convert_case::{Case, Casing};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
-use std::fs;
-use std::io::{BufReader, Error, Write};
+use std::io::{Error, Write};
 use std::path::PathBuf;
 use std::process::Command as StdCommand;
 use tempfile::NamedTempFile;
-
-const CONFIG_DIR: &str = ".hit";
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct PostScriptConfig {
@@ -90,46 +88,59 @@ impl Command {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug)]
-pub struct Config {
-    pub envs: HashMap<String, HashMap<String, String>>,
-    pub commands: HashMap<String, Box<CommandType>>,
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::*;
+    use serde_json::json;
 
-#[derive(Deserialize, Serialize, Debug)]
-#[serde(untagged)]
-pub enum CommandType {
-    Command(Command),
-    NestedCommand(HashMap<String, Box<CommandType>>),
-}
-
-fn get_file_path() -> PathBuf {
-    PathBuf::from(CONFIG_DIR).join("config.json")
-}
-
-impl Config {
-    pub fn new() -> Config {
-        let file_path = get_file_path();
-        // Create the directory if it doesn't exist
-        if let Some(parent_dir) = file_path.parent() {
-            fs::create_dir_all(parent_dir).expect("Failed to create directory");
+    #[fixture]
+    fn input_command() -> Command {
+        Command {
+            method: http::HttpMethod::POST,
+            url: String::from("https://example.com/orgs/:orgId/employees/:employeeId"),
+            headers: HashMap::new(),
+            body: Some(json!({
+                "name": ":employeeName",
+                "title": ":title",
+            })),
+            postscript: None,
         }
+    }
 
-        // Create the file if it doesn't exist
-        if !file_path.exists() {
-            let init_config = Config {
-                commands: HashMap::new(),
-                envs: HashMap::new(),
-            };
+    #[rstest]
+    fn test_route_params(input_command: Command) {
+        let mut route_params = input_command.route_params();
+        route_params.sort();
+        assert_eq!(
+            route_params,
+            vec!["employeeId".to_string(), "orgId".to_string()]
+        )
+    }
 
-            init_config.save().expect("could not save initial config")
-        }
+    #[rstest]
+    fn test_body_params(input_command: Command) {
+        let mut body_params = input_command.body_params();
+        body_params.sort();
+        assert_eq!(
+            body_params,
+            vec!["employeeName".to_string(), "title".to_string()]
+        )
+    }
 
-        let file = fs::File::open(file_path).expect("config file missing");
-        let reader = BufReader::new(file);
-
-        let config: Config = serde_json::from_reader(reader).expect("Error while reading JSON");
-        return config;
+    #[rstest]
+    fn test_all_params(input_command: Command) {
+        let mut all_params = input_command.params();
+        all_params.sort();
+        assert_eq!(
+            all_params,
+            vec![
+                "employeeId".to_string(),
+                "employeeName".to_string(),
+                "orgId".to_string(),
+                "title".to_string()
+            ]
+        )
     }
     pub fn save(&self) -> Result<(), Error> {
         let file_path = get_file_path();
