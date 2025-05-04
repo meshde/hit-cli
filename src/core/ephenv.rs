@@ -1,4 +1,4 @@
-use crate::app_config::get_app_config;
+use crate::core::app_config::get_app_config;
 use std::collections::HashMap;
 
 pub fn get_ephenvs() -> HashMap<String, String> {

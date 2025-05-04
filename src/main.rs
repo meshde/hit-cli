@@ -1,10 +1,7 @@
-mod app_config;
 mod cli;
-mod config;
-mod env;
-mod ephenv;
-mod http;
-mod input;
+mod constants;
+mod core;
+mod utils;
 
 use reqwest;
 use tokio;
