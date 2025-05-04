@@ -1,5 +1,6 @@
-use crate::config::{Command, CommandType, Config};
-use crate::http::HttpMethod;
+use crate::core::command::Command;
+use crate::core::config::{CommandType, Config};
+use crate::utils::http::HttpMethod;
 use clap::{Args, ValueHint};
 use convert_case::{Case, Casing};
 use openapiv3::{

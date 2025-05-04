@@ -142,10 +142,4 @@ mod tests {
             ]
         )
     }
-    pub fn save(&self) -> Result<(), Error> {
-        let file_path = get_file_path();
-        let mut file = fs::File::create(&file_path).expect("Failed to create file");
-
-        file.write_all(serde_json::to_string_pretty(&self).unwrap().as_bytes())
-    }
 }
