@@ -3,7 +3,8 @@ mod ephenv;
 mod last;
 mod run;
 
-use crate::config::{Command as ConfigCommand, CommandType as ConfigCommandType, Config};
+use crate::command::Command as ConfigCommand;
+use crate::config::{CommandType as ConfigCommandType, Config};
 use clap::{command, Arg, ArgMatches, Command, FromArgMatches as _, Parser, Subcommand};
 use clap_complete::CompleteEnv;
 use convert_case::{Case, Casing};
