@@ -11,13 +11,13 @@ use std::path::PathBuf;
 use std::process::Command as StdCommand;
 use tempfile::NamedTempFile;
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct PostScriptConfig {
     pub command: String,
     pub file: String,
 }
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct Command {
     pub method: http::HttpMethod,
     pub url: String,

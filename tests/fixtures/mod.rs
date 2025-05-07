@@ -10,8 +10,7 @@ pub struct SetupFixture {
 }
 
 impl SetupFixture {
-    pub fn new() -> Self {
-        let temp_dir = TempDir::new_in(".").unwrap();
+    pub fn new(temp_dir: TempDir) -> Self {
         let config_path = temp_dir.path().join(".hit").join("config.json");
 
         fs::create_dir_all(config_path.parent().unwrap()).unwrap();
@@ -38,8 +37,13 @@ impl SetupFixture {
 }
 
 #[fixture]
-pub fn hit_setup() -> SetupFixture {
-    SetupFixture::new()
+pub fn temp_dir() -> TempDir {
+    TempDir::new_in(".").unwrap()
+}
+
+#[fixture]
+pub fn hit_setup(temp_dir: TempDir) -> SetupFixture {
+    SetupFixture::new(temp_dir)
 }
 
 pub fn get_hit_command_for_dir(dir: &std::path::Path) -> Command {
