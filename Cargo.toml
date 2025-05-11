@@ -1,7 +1,11 @@
 [package]
 name = "hit-cli"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2021"
+authors = ["Mehmood S. Deshmukh <meshde.md@gmail.com>"]
+homepage = "https://usehit.dev"
+repository = "https://github.com/meshde/hit-cli"
+license-file = "LICENSE"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -20,6 +24,7 @@ edit = "0.1.5"
 flatten-json-object = "0.6.1"
 getopts = "0.2.21"
 handlebars = "5.1.2"
+human-panic = "2.0.2"
 hyper = "1.3.1"
 inquire = "0.7.5"
 openapiv3 = "1.0.1"

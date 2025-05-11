@@ -3,6 +3,7 @@ use crate::core::command::Command;
 use crate::core::config::Config;
 use crate::core::env::get_env;
 use crate::core::ephenv::get_ephenvs;
+use crate::utils::error::CliError;
 use crate::utils::http::handle_request;
 use colored_json;
 use edit::edit;
@@ -31,8 +32,24 @@ pub async fn run(
 
     let url = api_call.url.as_str();
 
-    let current_env = get_env().expect("env not set");
-    let env_data = config.envs.get(&current_env).expect("env not recognized");
+    let current_env = match get_env() {
+        Some(e) => e,
+        None => {
+            return Err(Box::new(CliError {
+                message: "env not set".to_string(),
+                help: None,
+            }))
+        }
+    };
+    let env_data = match config.envs.get(&current_env) {
+        Some(d) => d,
+        None => {
+            return Err(Box::new(CliError {
+                message: "env not recognized".to_string(),
+                help: None,
+            }))
+        }
+    };
     let ephenv_data = get_ephenvs();
     let merged_data = env_data
         .clone()
@@ -76,7 +93,8 @@ pub async fn run(
             .collect::<HashMap<String, String>>(),
         input,
     )
-    .await?;
+    .await
+    .unwrap();
 
     get_app_config().set_prev_request(response.clone());
 

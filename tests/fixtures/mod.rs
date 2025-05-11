@@ -27,7 +27,12 @@ impl SetupFixture {
                     "API_URL": "https://staging-api.example.com"
                 }
             },
-            "commands": {}
+            "commands": {
+                "get-by-id": {
+                    "method": "GET",
+                    "url": "{{API_URL}}/items/:id",
+                }
+            }
         });
 
         fs::write(&config_path, test_config.to_string()).unwrap();
