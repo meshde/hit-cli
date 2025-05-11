@@ -1,6 +1,6 @@
 [package]
 name = "hit-cli"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2021"
 authors = ["Mehmood S. Deshmukh <meshde.md@gmail.com>"]
 homepage = "https://usehit.dev"
