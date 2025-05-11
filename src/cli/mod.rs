@@ -6,6 +6,7 @@ mod run;
 
 use crate::core::command::Command as ConfigCommand;
 use crate::core::config::{CommandType as ConfigCommandType, Config};
+use crate::utils::error::CliError;
 use clap::{command, Arg, ArgMatches, Command, FromArgMatches as _, Parser, Subcommand};
 use clap_complete::CompleteEnv;
 use convert_case::{Case, Casing};
@@ -129,6 +130,11 @@ pub async fn init() -> ExitCode {
     };
 
     if let Err(_e) = output {
+        if let Some(e) = _e.downcast_ref::<CliError>() {
+            eprintln!("{}", e);
+        } else {
+            panic!("{}", _e);
+        }
         ExitCode::FAILURE
     } else {
         ExitCode::SUCCESS
