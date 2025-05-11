@@ -21,9 +21,27 @@ Support coming soon!
 
 Support coming soon!
 
+## Getting Started
+
+`hit` works based on the config present in the current working directory. Specifically, the `.hit/config.json` file present in the current working directory. You can either build your config from scratch or generate one based on a swagger file.
+
+### BYOC (Build Your Own Config)
+
+Running `hit` in any directory would set up a basic hit config file. Follow the instructions and examples under the [Usage section](#Usage) to add in your commands.
+
+### Swagger Import
+
+If you have a swagger file or any other OpenAPI spec file documenting the API endpoints on your system, then you can generate hit config to work with those endpoints by running:
+
+```
+hit import <path to swagger file>
+```
+
+This command will generate the corresponding `.hit/config.json` file in the current working directory. 
+
 ## Usage
 
-`hit` works based on the config present in the current working directory. Specifically, the `.hit/config.json` file present in the current working directory. The contents of the config define what commands are available to run.
+The contents of the config define what commands are available to run.
 
 For example, if the config looks something like:
 
