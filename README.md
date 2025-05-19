@@ -1,4 +1,6 @@
-![WhatsApp_Image_2025-04-19_at_20 12 04-removebg-preview](https://github.com/user-attachments/assets/42c37f68-1052-4032-aaf1-2e90b102e58d)
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/42c37f68-1052-4032-aaf1-2e90b102e58d" width="100" height="100" alt="hit cli logo">
+</p>
 
 
 # The hit CLI
