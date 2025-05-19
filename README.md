@@ -1,4 +1,7 @@
-# The hit CLI 👊
+![WhatsApp_Image_2025-04-19_at_20 12 04-removebg-preview](https://github.com/user-attachments/assets/42c37f68-1052-4032-aaf1-2e90b102e58d)
+
+
+# The hit CLI
 
 `hit` is a productivity-focussed command-line API client that converts individual API endpoints into command-line commands.
 
