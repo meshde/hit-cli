@@ -1,6 +1,6 @@
 [package]
 name = "hit-cli"
-version = "0.5.1"
+version = "0.6.0"
 edition = "2021"
 authors = ["Mehmood S. Deshmukh <meshde.md@gmail.com>"]
 homepage = "https://usehit.dev"
@@ -29,7 +29,7 @@ hyper = "1.3.1"
 inquire = "0.7.5"
 openapiv3 = "1.0.1"
 regex = "1.10.4"
-reqwest = {version="0.12.3", features=["json"]}
+reqwest = {version="0.12.3", features=["json", "multipart"]}
 serde = {version="1.0.200", features=["derive"]}
 serde_json = "1.0"
 serde_yaml = "0.9"
@@ -40,5 +40,6 @@ tokio = {version = "1.37.0", features = ["full"]}
 [dev-dependencies]
 assert_cmd = "2.0.17"
 insta = {version="1.43.1", features=["json"]}
+mockito = "1.7"
 predicates = "3.1.3"
 rstest = "0.25.0"

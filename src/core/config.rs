@@ -46,7 +46,7 @@ impl Config {
         let reader = BufReader::new(file);
 
         let config: Config = serde_json::from_reader(reader).expect("Error while reading JSON");
-        return config;
+        config
     }
     pub fn save(&self) -> Result<(), std::io::Error> {
         let file_path = get_config_file_path();

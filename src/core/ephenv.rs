@@ -9,7 +9,7 @@ pub fn get_ephenvs() -> HashMap<String, String> {
     HashMap::new()
 }
 
-pub fn set_ephenv(key: String, value: String) -> () {
+pub fn set_ephenv(key: String, value: String) {
     let mut app_config = get_app_config();
     app_config.set_ephenv(key, value);
 }

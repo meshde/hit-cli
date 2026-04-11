@@ -8,5 +8,6 @@ pub struct EphenvSetArguments {
 }
 
 pub fn init(args: EphenvSetArguments) -> Result<(), Box<dyn std::error::Error>> {
-    Ok(set_ephenv(args.key, args.value))
+    set_ephenv(args.key, args.value);
+    Ok(())
 }

@@ -27,7 +27,7 @@ impl AppConfig {
         }
     }
 
-    pub fn save(&self) -> () {
+    pub fn save(&self) {
         let app_config_dir = get_app_config_dir();
         let app_config_file_path = get_app_config_file_path();
 

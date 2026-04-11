@@ -7,5 +7,6 @@ pub struct EnvUseArguments {
 }
 
 pub fn init(args: EnvUseArguments) -> Result<(), Box<dyn std::error::Error>> {
-    Ok(set_env(args.env))
+    set_env(args.env);
+    Ok(())
 }

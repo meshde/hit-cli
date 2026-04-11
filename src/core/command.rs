@@ -38,6 +38,17 @@ fn get_params_from_string(input: &str) -> Vec<String> {
         .collect()
 }
 
+pub fn get_param_types_from_string(input: &str) -> HashMap<String, Option<String>> {
+    let typed_param_regex = Regex::new(r":(\w+)(?:\|(\w+))?").unwrap();
+    let mut result = HashMap::new();
+    for caps in typed_param_regex.captures_iter(input) {
+        let name = caps.get(1).unwrap().as_str().to_string();
+        let param_type = caps.get(2).map(|m| m.as_str().to_string());
+        result.insert(name, param_type);
+    }
+    result
+}
+
 impl Command {
     pub fn route_params(&self) -> Vec<String> {
         get_params_from_string(self.url.as_str())
@@ -52,6 +63,13 @@ impl Command {
 
     pub fn params(&self) -> Vec<String> {
         self.route_params().union(self.body_params())
+    }
+
+    pub fn body_param_types(&self) -> HashMap<String, Option<String>> {
+        match &self.body {
+            Some(input) => get_param_types_from_string(&input.to_string()),
+            None => HashMap::new(),
+        }
     }
 
     pub fn run_post_command_script(
@@ -141,5 +159,35 @@ mod tests {
                 "title".to_string()
             ]
         )
+    }
+
+    #[test]
+    fn test_get_param_types_from_string() {
+        let input = r#"{"dryRun":":dryRun|boolean","limit":":limit|number","name":":name"}"#;
+        let types = get_param_types_from_string(input);
+        assert_eq!(types.get("dryRun"), Some(&Some("boolean".to_string())));
+        assert_eq!(types.get("limit"), Some(&Some("number".to_string())));
+        assert_eq!(types.get("name"), Some(&None));
+    }
+
+    #[test]
+    fn test_body_param_types() {
+        let cmd = Command {
+            method: http::HttpMethod::POST,
+            url: String::from("https://example.com/api"),
+            headers: HashMap::new(),
+            body: Some(json!({
+                "dryRun": ":dryRun|boolean",
+                "limit": ":limit|number",
+                "file": ":filePath|file",
+                "name": ":name",
+            })),
+            postscript: None,
+        };
+        let types = cmd.body_param_types();
+        assert_eq!(types.get("dryRun"), Some(&Some("boolean".to_string())));
+        assert_eq!(types.get("limit"), Some(&Some("number".to_string())));
+        assert_eq!(types.get("filePath"), Some(&Some("file".to_string())));
+        assert_eq!(types.get("name"), Some(&None));
     }
 }

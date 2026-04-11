@@ -38,38 +38,26 @@ pub fn generate_config(spec: &OpenAPI) -> Result<Config, Box<dyn Error>> {
         };
 
         // Process operations (GET, POST, PUT, DELETE, etc.)
+        process_operation(&mut tag_operations, path, path_item, &path_item.get, "get");
         process_operation(
             &mut tag_operations,
-            &path,
-            &path_item,
-            &path_item.get,
-            "get",
-        );
-        process_operation(
-            &mut tag_operations,
-            &path,
-            &path_item,
+            path,
+            path_item,
             &path_item.post,
             "post",
         );
+        process_operation(&mut tag_operations, path, path_item, &path_item.put, "put");
         process_operation(
             &mut tag_operations,
-            &path,
-            &path_item,
-            &path_item.put,
-            "put",
-        );
-        process_operation(
-            &mut tag_operations,
-            &path,
-            &path_item,
+            path,
+            path_item,
             &path_item.delete,
             "delete",
         );
         process_operation(
             &mut tag_operations,
-            &path,
-            &path_item,
+            path,
+            path_item,
             &path_item.patch,
             "patch",
         );
@@ -128,7 +116,7 @@ fn process_operation<'a>(
             tag.clone()
         } else {
             let segments: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
-            match segments.get(0) {
+            match segments.first() {
                 Some(&segment) => segment.to_string(),
                 None => "default".to_string(),
             }
@@ -136,7 +124,7 @@ fn process_operation<'a>(
 
         tag_operations
             .entry(section)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push((path, path_item, operation.clone()));
     }
 }
@@ -158,25 +146,25 @@ fn create_command_for_operation(
             if operation
                 .operation_id
                 .as_ref()
-                .map_or(false, |id| id.starts_with("get"))
+                .is_some_and(|id| id.starts_with("get"))
             {
                 HttpMethod::GET
             } else if operation
                 .operation_id
                 .as_ref()
-                .map_or(false, |id| id.starts_with("create"))
+                .is_some_and(|id| id.starts_with("create"))
             {
                 HttpMethod::POST
             } else if operation
                 .operation_id
                 .as_ref()
-                .map_or(false, |id| id.starts_with("update"))
+                .is_some_and(|id| id.starts_with("update"))
             {
                 HttpMethod::PUT
             } else if operation
                 .operation_id
                 .as_ref()
-                .map_or(false, |id| id.starts_with("delete"))
+                .is_some_and(|id| id.starts_with("delete"))
             {
                 HttpMethod::DELETE
             } else {

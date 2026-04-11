@@ -19,8 +19,7 @@ impl Autocomplete for CustomAutocomplete {
             .suggestions
             .iter()
             .filter(|s| s.to_lowercase().contains(&input_lower))
-            // NOTE(meshde): the following line converts Vec<&String> to Vec<String>
-            .map(|s| s.clone())
+            .cloned()
             .collect())
     }
     fn get_completion(

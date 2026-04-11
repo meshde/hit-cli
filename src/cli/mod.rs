@@ -7,11 +7,17 @@ mod run;
 use crate::core::command::Command as ConfigCommand;
 use crate::core::config::{CommandType as ConfigCommandType, Config};
 use crate::utils::error::CliError;
-use clap::{command, Arg, ArgMatches, Command, FromArgMatches as _, Parser, Subcommand};
+use clap::{Arg, ArgAction, ArgMatches, Command, FromArgMatches as _, Parser, Subcommand};
 use clap_complete::CompleteEnv;
 use convert_case::{Case, Casing};
 use std::collections::HashMap;
+use std::collections::HashSet;
+use std::path::PathBuf;
 use std::process::ExitCode;
+
+const GLOBAL_ARG_EDIT_BODY: &str = "edit-body";
+const GLOBAL_ARG_BODY_FILE: &str = "body-file";
+const GLOBAL_ARG_JSON: &str = "json";
 
 #[derive(Debug, Parser)]
 #[command(version)]
@@ -38,7 +44,7 @@ fn formulate_command(
                 for param in params {
                     subcommand = subcommand.arg(
                         Arg::new(param.to_string())
-                            .long(&param.to_string().to_case(Case::Kebab))
+                            .long(param.to_string().to_case(Case::Kebab))
                             .value_name(param.to_string())
                             .help(format!("Provide value for the param :{}", param)),
                     )
@@ -56,36 +62,66 @@ fn formulate_command(
     command.clone()
 }
 
-fn obtain_run_command_from_matches(
-    matches: &ArgMatches,
+fn obtain_run_command_from_matches<'a>(
+    matches: &'a ArgMatches,
     config_commands: &HashMap<String, Box<ConfigCommandType>>,
     args_map: &mut HashMap<String, String>,
-) -> ConfigCommand {
+) -> (ConfigCommand, &'a ArgMatches) {
+    let global_args: HashSet<&str> = [GLOBAL_ARG_EDIT_BODY, GLOBAL_ARG_BODY_FILE, GLOBAL_ARG_JSON]
+        .into_iter()
+        .collect();
+
     let subcommand_name = matches.subcommand_name().unwrap();
     let config_command_value = config_commands.get(subcommand_name).unwrap();
-    let subcommand_matches = matches.subcommand_matches(&subcommand_name).unwrap();
+    let subcommand_matches = matches.subcommand_matches(subcommand_name).unwrap();
 
     match **config_command_value {
         ConfigCommandType::Command(ref config_command) => {
             for arg_id in subcommand_matches.ids() {
+                let id_str = arg_id.as_str();
+                if global_args.contains(id_str) {
+                    continue;
+                }
                 args_map.insert(
-                    arg_id.to_string(),
+                    id_str.to_string(),
                     subcommand_matches
-                        .get_one::<String>(arg_id.as_str())
+                        .get_one::<String>(id_str)
                         .unwrap()
                         .to_string(),
                 );
             }
-            config_command.clone()
+            (config_command.clone(), subcommand_matches)
         }
         ConfigCommandType::NestedCommand(ref config_command) => {
-            obtain_run_command_from_matches(&subcommand_matches, &config_command, args_map)
+            obtain_run_command_from_matches(subcommand_matches, config_command, args_map)
         }
     }
 }
 
 fn get_run_command(config: &Config) -> Command {
-    let mut command = Command::new("run").arg_required_else_help(true);
+    let mut command = Command::new("run")
+        .arg_required_else_help(true)
+        .arg(
+            Arg::new(GLOBAL_ARG_EDIT_BODY)
+                .long("edit-body")
+                .short('e')
+                .action(ArgAction::SetTrue)
+                .global(true)
+                .help("Open editor to review/edit request body before sending"),
+        )
+        .arg(
+            Arg::new(GLOBAL_ARG_BODY_FILE)
+                .long("body-file")
+                .global(true)
+                .help("Read request body from a file instead of using the configured body"),
+        )
+        .arg(
+            Arg::new(GLOBAL_ARG_JSON)
+                .long("json")
+                .action(ArgAction::SetTrue)
+                .global(true)
+                .help("Output response as structured JSON (url, status, headers, body)"),
+        );
 
     command = formulate_command(command, &config.commands);
     command
@@ -110,12 +146,21 @@ pub async fn init() -> ExitCode {
 
             let mut args_map = HashMap::new();
 
-            let config_command = obtain_run_command_from_matches(
-                &run_subcommand_matches,
+            let (config_command, leaf_matches) = obtain_run_command_from_matches(
+                run_subcommand_matches,
                 &config.commands,
                 &mut args_map,
             );
-            run::run(&config_command, args_map).await
+
+            let options = run::RunOptions {
+                edit_body: leaf_matches.get_flag(GLOBAL_ARG_EDIT_BODY),
+                body_file: leaf_matches
+                    .get_one::<String>(GLOBAL_ARG_BODY_FILE)
+                    .map(PathBuf::from),
+                json_output: leaf_matches.get_flag(GLOBAL_ARG_JSON),
+            };
+
+            run::run(&config_command, args_map, options).await
         }
         _ => {
             let static_command_matches = StaticCommand::from_arg_matches(&matches).unwrap();

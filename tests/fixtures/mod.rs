@@ -63,3 +63,34 @@ pub fn get_hit_command_for_setup(setup: &SetupFixture) -> Command {
     cmd.env("APP_CONFIG_DIR", app_config_dir);
     return cmd;
 }
+
+pub fn setup_with_mock(
+    temp_dir: TempDir,
+    server_url: &str,
+    commands_json: serde_json::Value,
+) -> SetupFixture {
+    let config_path = temp_dir.path().join(".hit").join("config.json");
+    fs::create_dir_all(config_path.parent().unwrap()).unwrap();
+
+    let test_config = serde_json::json!({
+        "envs": {
+            "dev": {
+                "API_URL": server_url
+            }
+        },
+        "commands": commands_json
+    });
+
+    fs::write(&config_path, test_config.to_string()).unwrap();
+
+    let setup = SetupFixture { temp_dir };
+
+    // Set env to "dev"
+    let mut use_cmd = get_hit_command_for_setup(&setup);
+    use_cmd.args(["env", "use", "dev"]);
+    use_cmd
+        .output()
+        .expect("Failed to set env to dev in setup_with_mock");
+
+    setup
+}
