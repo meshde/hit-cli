@@ -15,6 +15,28 @@ use std::io::stdout;
 use std::io::Write;
 use std::path::PathBuf;
 
+const BREAKING_CHANGE_VERSION: &str = "0.6.0";
+
+fn check_upgrade_notice() -> bool {
+    let mut app_config = get_app_config();
+    let needs_notice = match app_config.get_last_seen_version() {
+        Some(version) => version.as_str() < BREAKING_CHANGE_VERSION,
+        None => true,
+    };
+
+    if needs_notice {
+        eprintln!(
+            "NOTE: As of v{}, the editor no longer opens automatically for request bodies.",
+            BREAKING_CHANGE_VERSION
+        );
+        eprintln!("Use --edit-body (-e) to review/edit the body before sending.");
+        eprintln!("Please re-run your command to continue.");
+        app_config.set_last_seen_version(env!("CARGO_PKG_VERSION").to_string());
+    }
+
+    needs_notice
+}
+
 fn replace_params(input: String, params: &HashMap<String, String>) -> String {
     params.keys().fold(input, |acc, x| {
         acc.replace(&format!(":{}", x), params.get(x).unwrap())
@@ -120,6 +142,10 @@ pub async fn run(
     param_values: HashMap<String, String>,
     options: RunOptions,
 ) -> Result<(), Box<dyn Error>> {
+    if check_upgrade_notice() {
+        return Ok(());
+    }
+
     let config = Config::new();
     let env_var_regex = Regex::new(r"\{\{\w+}}").unwrap();
 

@@ -37,6 +37,8 @@ impl SetupFixture {
 
         fs::write(&config_path, test_config.to_string()).unwrap();
 
+        seed_app_config(&temp_dir);
+
         Self { temp_dir }
     }
 }
@@ -49,6 +51,14 @@ pub fn temp_dir() -> TempDir {
 #[fixture]
 pub fn hit_setup(temp_dir: TempDir) -> SetupFixture {
     SetupFixture::new(temp_dir)
+}
+
+fn seed_app_config(temp_dir: &TempDir) {
+    let app_config_path = temp_dir.path().join("config.json");
+    let app_config = serde_json::json!({
+        "last_seen_version": env!("CARGO_PKG_VERSION")
+    });
+    fs::write(&app_config_path, app_config.to_string()).unwrap();
 }
 
 pub fn get_hit_command_for_dir(dir: &std::path::Path) -> Command {
@@ -82,6 +92,8 @@ pub fn setup_with_mock(
     });
 
     fs::write(&config_path, test_config.to_string()).unwrap();
+
+    seed_app_config(&temp_dir);
 
     let setup = SetupFixture { temp_dir };
 
