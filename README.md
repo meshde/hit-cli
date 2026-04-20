@@ -258,6 +258,135 @@ hit run users get --user-id 47
 ```
 
 
+### Request Body
+
+Commands that use `POST`, `PUT`, or `PATCH` methods can include a request body in the config. Parameters in the body work the same way as route params — prefix them with `:` and pass values as command-line options.
+
+```json
+{
+  "commands": {
+    "create-user": {
+      "url": "{{API_URL}}/users",
+      "method": "POST",
+      "body": {
+        "name": ":name",
+        "email": ":email"
+      }
+    }
+  }
+}
+```
+
+```bash
+hit run create-user --name "Jane Doe" --email "jane@example.com"
+```
+
+#### Editing the Body Before Sending
+
+If you want to review or modify the request body in your system editor before sending, use the `--edit-body` (or `-e`) flag:
+
+```bash
+hit run create-user --name "Jane Doe" --email "jane@example.com" --edit-body
+```
+
+#### Providing the Body from a File
+
+Instead of using the body defined in the config, you can provide a body from a file using `--body-file`:
+
+```bash
+hit run create-user --body-file payload.json
+```
+
+The file contents support environment variable substitution (double curly brace syntax) just like the config body.
+
+### Typed Parameters
+
+By default, all parameter values are substituted as strings. For JSON request bodies, you may need values to be a specific JSON type. `hit` supports type annotations on parameters using the `|type` suffix.
+
+#### Boolean Parameters
+
+Use `|boolean` to substitute the value as a JSON boolean (`true`/`false`) instead of a string:
+
+```json
+{
+  "commands": {
+    "update-setting": {
+      "url": "{{API_URL}}/settings",
+      "method": "POST",
+      "body": {
+        "dryRun": ":dryRun|boolean",
+        "name": ":name"
+      }
+    }
+  }
+}
+```
+
+```bash
+hit run update-setting --dry-run true --name "test"
+# Sends: {"dryRun": true, "name": "test"}
+```
+
+#### Number Parameters
+
+Use `|number` to substitute the value as a JSON number:
+
+```json
+{
+  "commands": {
+    "list-items": {
+      "url": "{{API_URL}}/items",
+      "method": "POST",
+      "body": {
+        "limit": ":limit|number"
+      }
+    }
+  }
+}
+```
+
+```bash
+hit run list-items --limit 42
+# Sends: {"limit": 42}
+```
+
+#### File Parameters
+
+Use `|file` to upload a file as part of a multipart form request. When a file parameter is present, the request is automatically sent as `multipart/form-data`:
+
+```json
+{
+  "commands": {
+    "upload": {
+      "url": "{{API_URL}}/upload",
+      "method": "POST",
+      "body": {
+        "document": ":filePath|file",
+        "description": ":description"
+      }
+    }
+  }
+}
+```
+
+```bash
+hit run upload --file-path ./report.pdf --description "Monthly report"
+```
+
+### JSON Output
+
+By default, `hit` pretty-prints the response body with syntax highlighting. For scripted or non-interactive usage, the `--json` flag outputs the full response (URL, status code, headers, and body) as a single JSON object:
+
+```bash
+hit run list-users --json
+```
+
+This is useful for piping into `jq` or other tools:
+
+```bash
+hit run list-users --json | jq '.body | fromjson | .[] | .name'
+```
+
 ### Inspecting the response of an API call
 
 Normally, running a command would simply output the body of the response of the API call being made. If you would like to inspect the entire response including the status code and response headers, this can be done by running the command:
